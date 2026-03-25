@@ -296,6 +296,7 @@ table.dt tr:hover td{background:#f9f9fb}
 .qcb{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;background:rgba(12,36,97,.07);border-radius:20px;font-size:12px;font-weight:700;color:var(--primary)}
 .apinp{padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none;width:110px;transition:border-color .2s}
 .apinp:focus{border-color:var(--primary)}
+.enter-hint{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;margin-bottom:20px;opacity:.55}
 </style>
 </head>
 <body>
@@ -320,11 +321,11 @@ table.dt tr:hover td{background:#f9f9fb}
         <span>✓</span><span id="foundName">Talaba topildi</span>
       </div>
       <div id="firstTimeHint" class="first-time-hint">
-        💡 Birinchi marta kiryapsiz — o'zingiz xohlagan parolni o'rnating. Bu parol keyingi kirishlar uchun ishlatiladi.
+        💡 Birinchi marta kiryapsiz — HEMIS parolingizni kiriting. Bu parol keyingi kirishlar uchun ishlatiladi.
       </div>
       <div class="ig">
-        <label>Parol <span class="req">*</span></label>
-        <input type="password" id="fPass" placeholder="Parolingiz">
+        <label>HEMIS Parol <span class="req">*</span></label>
+        <input type="password" id="fPass" placeholder="HEMIS parolingiz bilan kiring">
       </div>
       <div id="lerr" class="errmsg"></div>
       <button class="lbtn" onclick="doLogin()"><span>Kirish</span><span>→</span></button>
@@ -387,6 +388,7 @@ table.dt tr:hover td{background:#f9f9fb}
       <button class="btn btn-ghost" id="v2Prev" onclick="v2p()">← Oldingi</button>
       <button class="btn btn-p" id="v2Next" onclick="v2n()">Keyingi →</button>
     </div>
+    <div class="enter-hint">⌨️ Enter tugmasi — Keyingisi</div>
   </div>
 </div>
 
@@ -450,8 +452,15 @@ table.dt tr:hover td{background:#f9f9fb}
     <div id="tab-students" class="tp">
       <div class="ph"><div class="ph-l"><div class="pt-title">👥 Talabalar</div><div class="pt-sub">Barcha ro'yxatdan o'tganlar</div></div><button class="btn btn-sm btn-g" onclick="expXls()">📥 Excel</button></div>
       <div class="card">
-        <div class="fr"><input class="si-inp" type="text" id="sSrch" placeholder="🔍 Ism yoki ID..." oninput="rStudents()"><button class="btn btn-sm btn-ghost" onclick="rStudents()">🔄</button></div>
-        <div class="tw"><table class="dt"><thead><tr><th>#</th><th>Login ID</th><th>Ism Familya</th><th>Natija</th><th>Holat</th><th>Sana</th><th>Amallar</th></tr></thead><tbody id="sTbody"></tbody></table></div>
+        <div class="fr"><input class="si-inp" type="text" id="sSrch" placeholder="🔍 Ism yoki ID..." oninput="rStudents()">
+          <select id="sGrpF" style="padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:12px;font-family:inherit;outline:none;background:#fff;color:var(--text)" onchange="rStudents()">
+            <option value="">Barcha guruhlar</option>
+            <option value="II-84/25">II-84/25</option>
+            <option value="II-85/25">II-85/25</option>
+            <option value="II-86/25">II-86/25</option>
+          </select>
+          <button class="btn btn-sm btn-ghost" onclick="rStudents()">🔄</button></div>
+        <div class="tw"><table class="dt"><thead><tr><th>#</th><th>Login ID</th><th>Ism Familya</th><th>Guruh</th><th>Natija</th><th>Holat</th><th>Sana</th><th>Amallar</th></tr></thead><tbody id="sTbody"></tbody></table></div>
       </div>
     </div>
     <!-- QUESTIONS -->
@@ -508,31 +517,78 @@ table.dt tr:hover td{background:#f9f9fb}
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const SA_ID = '324251104247'; // Super admin — maxfiy
 
-// Rasmdan olingan barcha talabalar (HEMIS ID → to'liq ism)
+// Barcha talabalar (HEMIS ID → to'liq ism) — SA ham oddiy talaba sifatida
 const VALID_STUDENTS = {
-  '324251104270': {name:"ARABBOYEVA MOHLAROY DILSHOD QIZI",      kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104264': {name:"ATAXONOV RO'ZMATJON MAXMUD O'G'LI",     kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104274': {name:"BORISOV TEMURBEK NODIRBEKOVICH",         kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104249': {name:"BOZOROV ZIYODULLO KAMOLIDDIN O'G'LI",   kurs:'1-kurs', guruh:'II-85/25'},
-  '324251105287': {name:"FOZILJONOVA SEVINCHOY MANSURJON QIZI",  kurs:'1-kurs', guruh:'II-85/25'},
-  '324251105298': {name:"G'ANIYEVA BAXTIGUL NURILLA QIZI",       kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104275': {name:"KAXXOROV BAXODIR ZAFAR O'G'LI",         kurs:'1-kurs', guruh:'II-85/25'},
-  '324251105316': {name:"KURBONBOYEV AKBARSHOH SHARIFJON O'G'LI",kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104255': {name:"LUTFULLAYEV ASROR AHROR O'G'LI",        kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104258': {name:"O'ROLOV QUVONCHBEK KAMOL O'G'LI",       kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104254': {name:"ORTIQOVA MADINA OLIMJON QIZI",           kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104265': {name:"QAYTAROV SANJARBEK SHOKIR O'G'LI",      kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104259': {name:"RAHIMOV DILSHODJON ZOHIR O'G'LI",       kurs:'1-kurs', guruh:'II-85/25'},
-  '324251105464': {name:"RAXMONOV ASILBEK XASAN O'G'LI",         kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104253': {name:"RUSTAMOV DIYORBEK BOTIR O'G'LI",        kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104272': {name:"SAFAROV SHAXRIYOR MUZAFFAR O'G'LI",     kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104280': {name:"SHAMSIYEV AZIZBEK OLIMJON O'G'LI",      kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104276': {name:"SHARIPOV BEHRO'Z XUSNIDDIN O'G'LI",     kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104273': {name:"SOBIROV MUXAMMADSODIQ SOIBJON O'G'LI",  kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104244': {name:"TO'XTAYEV FIRDAVS KOMILJON O'G'LI",     kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104261': {name:"TO'XTABOYEV NOZIMJON AZZAMJON O'G'LI",  kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104278': {name:"TURDIYEV BEKZOD RUSTAM O'G'LI",         kurs:'1-kurs', guruh:'II-85/25'},
-  '324251104268': {name:"UBAYDULLAEV RUSLAN KUATOVICH",           kurs:'1-kurs', guruh:'II-85/25'}
+  // ── Super Admin (oddiy talaba sifatida) ──────────────────────────
+  '324251104247': {name:"ABDUVAYITOV JASURJON IZZATILLA O'G'LI",  kurs:'1-kurs', guruh:'II-85/25'},
+  // ── II-85/25 ────────────────────────────────────────────────────
+  '324251104270': {name:"ARABBOYEVA MOHLAROY DILSHOD QIZI",       kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104264': {name:"ATAXONOV RO'ZMATJON MAXMUD O'G'LI",      kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104274': {name:"BORISOV TEMURBEK NODIRBEKOVICH",          kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104249': {name:"BOZOROV ZIYODULLO KAMOLIDDIN O'G'LI",    kurs:'1-kurs', guruh:'II-85/25'},
+  '324251105287': {name:"FOZILJONOVA SEVINCHOY MANSURJON QIZI",   kurs:'1-kurs', guruh:'II-85/25'},
+  '324251105298': {name:"G'ANIYEVA BAXTIGUL NURILLA QIZI",        kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104275': {name:"KAXXOROV BAXODIR ZAFAR O'G'LI",          kurs:'1-kurs', guruh:'II-85/25'},
+  '324251105316': {name:"KURBONBOYEV AKBARSHOH SHARIFJON O'G'LI", kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104255': {name:"LUTFULLAYEV ASROR AHROR O'G'LI",         kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104258': {name:"O'ROLOV QUVONCHBEK KAMOL O'G'LI",        kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104254': {name:"ORTIQOVA MADINA OLIMJON QIZI",            kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104265': {name:"QAYTAROV SANJARBEK SHOKIR O'G'LI",       kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104259': {name:"RAHIMOV DILSHODJON ZOHIR O'G'LI",        kurs:'1-kurs', guruh:'II-85/25'},
+  '324251105464': {name:"RAXMONOV ASILBEK XASAN O'G'LI",          kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104253': {name:"RUSTAMOV DIYORBEK BOTIR O'G'LI",         kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104272': {name:"SAFAROV SHAXRIYOR MUZAFFAR O'G'LI",      kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104280': {name:"SHAMSIYEV AZIZBEK OLIMJON O'G'LI",       kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104276': {name:"SHARIPOV BEHRO'Z XUSNIDDIN O'G'LI",      kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104273': {name:"SOBIROV MUXAMMADSODIQ SOIBJON O'G'LI",   kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104244': {name:"TO'XTAYEV FIRDAVS KOMILJON O'G'LI",      kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104261': {name:"TO'XTABOYEV NOZIMJON AZZAMJON O'G'LI",   kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104278': {name:"TURDIYEV BEKZOD RUSTAM O'G'LI",          kurs:'1-kurs', guruh:'II-85/25'},
+  '324251104268': {name:"UBAYDULLAEV RUSLAN KUATOVICH",            kurs:'1-kurs', guruh:'II-85/25'},
+  // ── II-86/25 ────────────────────────────────────────────────────
+  '324251104316': {name:"ABDALIYEV XUSHNUD JASUR O'G'LI",         kurs:'1-kurs', guruh:'II-86/25'},
+  '324251105399': {name:"ABDUGAPIROV BEXRUZBEK ABDUQODIR O'G'LI", kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104304': {name:"ABDUJABBOROV OZODBEK BOTIR O'G'LI",      kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104312': {name:"ABDULLAYEV XOJIAKBAR RAVSHANBEK O'G'LI", kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104294': {name:"ABDULXAKIMOV DONIYORXON ABDURASHID O'G'LI",kurs:'1-kurs',guruh:'II-86/25'},
+  '324251104303': {name:"ABDUMANNONOV SALOXIDDIN DILSHOD O'G'LI", kurs:'1-kurs', guruh:'II-86/25'},
+  '324251106460': {name:"ABDURAIMOV BOBURSHOX TOXIRJON O'G'LI",   kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104308': {name:"ABDURAZAKOV AXRORBEK ADXAM O'G'LI",      kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104298': {name:"ABDUSALAMOV JAXONGIR O'TKUR O'G'LI",     kurs:'1-kurs', guruh:'II-86/25'},
+  '324251106452': {name:"ALIKULOV AZIZBEK OVLOQUL O'G'LI",        kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104288': {name:"ASHUROV LATIFBEK LAZIZ O'G'LI",          kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104295': {name:"BO'RONBOYEV HASANJON MIRZOXID O'G'LI",   kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104302': {name:"JABBOROV AZIMBEK ZOKIR O'G'LI",          kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104306': {name:"JABBOROV MUHAMMADAMIN JAMSHID O'G'LI",   kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104299': {name:"KO'SHMURODOV G'AFFORJON ULUG'BEK O'G'LI",kurs:'1-kurs',guruh:'II-86/25'},
+  '324251104548': {name:"NAZAROV SIROJBEK ISLOMJON O'G'LI",       kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104315': {name:"OMIRBAEV ALISHER BAXADIROVICH",           kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104296': {name:"SAIDNABIYEV SHAVKAT G'AYRAT O'G'LI",     kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104292': {name:"SAYLAVOVA GULBANU ABDIG'ANI QIZI",        kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104309': {name:"TO'LQINOV KOMILJON DILSHODOVICH",         kurs:'1-kurs', guruh:'II-86/25'},
+  '324251104311': {name:"XABIBULLAYEV UMIDJON XOLMUROD O'G'LI",   kurs:'1-kurs', guruh:'II-86/25'},
+  // ── II-84/25 ────────────────────────────────────────────────────
+  '324251104240': {name:"ABDIJANOVA FERUZA BAXTIYOR QIZI",         kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104216': {name:"ABDUQAXXOROV ISFANDIYOR NODIRBEK O'G'LI", kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104208': {name:"AHMEDOV MUHAMMAD ABDIMANNON O'G'LI",      kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104209': {name:"ALIJONOV JAVOHIR ISMOILJON O'G'LI",       kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104231': {name:"AXMATOV SHOXJAHON SHERALI O'G'LI",        kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104232': {name:"BAXODIROV ZIYOVUDDIN FAXRIDDIN O'G'LI",   kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104235': {name:"BERDIBAYEVA SHAXZODA ISMOIL QIZI",        kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104225': {name:"ESHNAZAROV SHAXRIYOR ZIYADULLA O'G'LI",   kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104237': {name:"IKROMIDINOV SHAMSIDIN IQBOLIDIN O'G'LI",  kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104227': {name:"JUMAYEV FARRUH RO'ZIBOYEVICH",            kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104202': {name:"MANNOBOV MAMIRJON MUQUMJON O'G'LI",       kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104219': {name:"MO'YDINOV XOJIAKBAR MANSURJON O'G'LI",    kurs:'1-kurs', guruh:'II-84/25'},
+  '324251106319': {name:"NE'MATILLAYEV SARDOR URAL O'G'LI",        kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104218': {name:"NO'MONJONOV MUHAMMADALI ELYOR O'G'LI",    kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104189': {name:"OTANAZAROV AZIZBEK AKMAL O'G'LI",         kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104196': {name:"SAPARBEKOV BEGZOD SHUKUR O'G'LI",         kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104224': {name:"TURABOYEV SAMANDAR OTAJON O'G'LI",        kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104239': {name:"XOLBOYEV LAZIZBEK ILXOM O'G'LI",          kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104220': {name:"XOLIQOVA ASILZODA ZARIF QIZI",             kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104221': {name:"XOLMETOV ASROR BOTIR O'G'LI",              kurs:'1-kurs', guruh:'II-84/25'},
+  '324251104234': {name:"XUDAYBERDIYEV JAXONGIR G'AYRAT O'G'LI",   kurs:'1-kurs', guruh:'II-84/25'},
 };
 
 const SAMPLE_QS=[
@@ -630,12 +686,21 @@ function doLogin(){
     err.style.display='block'; return;
   }
 
-  // ── Super Admin (maxfiy) ──
+  // ── Super Admin — student sifatida kiradi ──
   if(id===SA_ID){
-    const saPw=DB.getSAPw();
-    if(pw!==saPw){err.textContent='❌ Parol noto\'g\'ri!';err.style.display='block';return}
-    CU={id,name:'Super Admin',isAdmin:true,isSA:true};
-    openAdmin(true); return;
+    const stus=DB.students();
+    const info=VALID_STUDENTS[SA_ID];
+    if(stus[id]&&stus[id].password){
+      if(stus[id].password!==pw){err.textContent='❌ Parol noto\'g\'ri!';err.style.display='block';return}
+    } else {
+      // Birinchi marta — saqlash
+      if(pw.length<4){err.textContent='⚠️ Parol kamida 4 ta belgidan iborat bo\'lishi kerak!';err.style.display='block';return}
+      if(!stus[id]) stus[id]={id,name:info.name,password:'',completed:false,score:0,total:0,ts:null,testHistory:[],resetAll:false,resetByAdmins:[]};
+      stus[id].password=pw; stus[id].name=info.name;
+      DB.svStu(stus);
+    }
+    CU={id,name:info.name,isAdmin:false,isSA:true};
+    QS=DB.questions();openStudentPanel();return;
   }
 
   const adms=DB.admins();
@@ -759,7 +824,7 @@ function rSHome(){
     <div class="welcome-card">
       <div class="wc-greeting">Xush kelibsiz 👋</div>
       <div class="wc-name">${CU.name}</div>
-      <div class="wc-sub">HEMIS ID: ${CU.id} · II-85/25 guruh</div>
+      <div class="wc-sub">HEMIS ID: ${CU.id} · ${(VALID_STUDENTS[CU.id]||{guruh:'—'}).guruh} guruh</div>
       ${statsHtml}
     </div>
     ${contentHtml}`;
@@ -879,44 +944,27 @@ function rSProfile(){
   const el=document.getElementById('stab-profile');
   const info=VALID_STUDENTS[CU.id]||{name:CU.name,kurs:'—',guruh:'—'};
   const initials=info.name.split(' ').map(w=>w[0]||'').slice(0,2).join('').toUpperCase();
+  const stus=DB.students();const s=stus[CU.id];
+  const p=s&&s.total?Math.round(s.score/s.total*100):0;
+  // Faqat super admin uchun kichkina maxfiy tugma
+  const saBtn=CU.isSA?`<div style="margin-top:10px"><button onclick="openAdmin(true)" style="background:transparent;border:1px dashed rgba(108,92,231,.3);color:rgba(108,92,231,.45);font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;font-family:inherit;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--purple)';this.style.color='var(--purple)';this.style.borderStyle='solid'" onmouseout="this.style.borderColor='rgba(108,92,231,.3)';this.style.color='rgba(108,92,231,.45)';this.style.borderStyle='dashed'">⚙ admin paneli</button></div>`:'';
   el.innerHTML=`
     <div class="profile-card">
       <div class="profile-avatar">${initials}</div>
       <div class="profile-name">${info.name}</div>
       <div class="profile-id">${CU.id}</div>
+      ${saBtn}
       <div class="profile-grid">
         <div class="profile-item"><div class="profile-item-label">Kurs</div><div class="profile-item-value">${info.kurs}</div></div>
         <div class="profile-item"><div class="profile-item-label">Guruh</div><div class="profile-item-value">${info.guruh}</div></div>
         <div class="profile-item"><div class="profile-item-label">Ta'lim tili</div><div class="profile-item-value">O'zbek</div></div>
         <div class="profile-item"><div class="profile-item-label">HEMIS ID</div><div class="profile-item-value" style="font-family:'JetBrains Mono',monospace;font-size:11px">${CU.id}</div></div>
-      </div>
-    </div>
-    <div class="profile-card">
-      <div class="ctitle">🔐 Parolni o'zgartirish</div>
-      <div class="pw-form">
-        <input type="password" class="pw-inp" id="oldPwInp" placeholder="Joriy parolingiz">
-        <input type="password" class="pw-inp" id="newPwInp" placeholder="Yangi parol (kamida 4 ta belgi)">
-        <input type="password" class="pw-inp" id="newPwInp2" placeholder="Yangi parolni tasdiqlang">
-        <button class="btn btn-p" onclick="changeStudentPw()">💾 Parolni yangilash</button>
+        ${s&&s.completed?`<div class="profile-item"><div class="profile-item-label">Oxirgi ball</div><div class="profile-item-value">${s.score}/${s.total}</div></div><div class="profile-item"><div class="profile-item-label">Natija</div><div class="profile-item-value" style="color:${p>=56?'var(--green)':'var(--red)'}">${p}%</div></div>`:''}
       </div>
     </div>`;
 }
 
-function changeStudentPw(){
-  const old=document.getElementById('oldPwInp').value;
-  const nw=document.getElementById('newPwInp').value;
-  const nw2=document.getElementById('newPwInp2').value;
-  const stus=DB.students();
-  if(!stus[CU.id]){toast('❌ Xatolik');return}
-  if(stus[CU.id].password!==old){toast('❌ Joriy parol noto\'g\'ri');return}
-  if(nw.length<4){toast('⚠️ Yangi parol kamida 4 ta belgi');return}
-  if(nw!==nw2){toast('❌ Parollar mos emas');return}
-  stus[CU.id].password=nw;DB.svStu(stus);
-  document.getElementById('oldPwInp').value='';
-  document.getElementById('newPwInp').value='';
-  document.getElementById('newPwInp2').value='';
-  toast('✅ Parol muvaffaqiyatli yangilandi!');
-}
+function changeStudentPw(){}
 
 // ─── CAN RETEST ───────────────────────────────────────────────────────────────
 function canRet(id){
@@ -927,19 +975,9 @@ function canRet(id){
 
 // ─── SUPER ADMIN SWITCH (admin sidebar ichida) ───────────────────────────────
 function saSwitch(){
-  if(saMode==='admin'){
-    saMode='student';
-    document.getElementById('saLbl').textContent='⚙️ Admin paneliga qaytish';
-    document.getElementById('adminPanel').classList.add('hidden');
-    QS=DB.questions();
-    if(!QS.length){toast('⚠️ Savollar yuklanmagan');saMode='admin';return}
-    ANS={};DB.cfg().variant===2?startV2():startV1();
-  } else {
-    saMode='admin';
-    document.getElementById('saLbl').textContent='🎓 Talaba rejimini sinab ko\'r';
-    clearInterval(tM);clearInterval(tQ);
-    openAdmin(true);
-  }
+  saMode='student';
+  document.getElementById('adminPanel').classList.add('hidden');
+  openStudentPanel();
 }
 
 // ─── ADMIN OPEN ───────────────────────────────────────────────────────────────
@@ -950,7 +988,7 @@ function openAdmin(isSA=false){
   if(isSA||CU.isSA){
     document.getElementById('sbSA').classList.remove('hidden');
     document.getElementById('saSwitchWrap').classList.remove('hidden');
-    document.getElementById('saLbl').textContent='🎓 Talaba rejimini sinab ko\'r';
+    document.getElementById('saLbl').textContent='← Talaba paneliga qaytish';
     saMode='admin';
   } else {
     document.getElementById('sbSA').classList.add('hidden');
@@ -988,13 +1026,13 @@ function rStats(){
 // ─── STUDENTS ─────────────────────────────────────────────────────────────────
 function rStudents(){
   const q=(document.getElementById('sSrch')?.value||'').toLowerCase();
+  const grp=document.getElementById('sGrpF')?.value||'';
   const stus=DB.students();
 
-  // Barcha valid_students ni ko'rsatish (kirganlari va kirmaganlari)
   const allIds=Object.keys(VALID_STUDENTS);
   const rows=allIds.filter(id=>{
+    if(grp&&VALID_STUDENTS[id].guruh!==grp)return false;
     const nm=VALID_STUDENTS[id].name.toLowerCase();
-    const sid=stus[id];
     return !q||nm.includes(q)||id.includes(q);
   }).map((id,i)=>{
     const s=stus[id];
@@ -1005,6 +1043,7 @@ function rStudents(){
       <td style="font-size:11px;color:var(--muted)">${i+1}</td>
       <td><span class="mono">${id}</span></td>
       <td><b>${VALID_STUDENTS[id].name}</b></td>
+      <td><span class="bdg bgr">${VALID_STUDENTS[id].guruh}</span></td>
       <td>${s&&s.completed?`<div class="sbr"><b style="font-size:11px">${s.score}/${s.total}</b><div class="smb"><div class="${p>=70?'smf':p>=56?'smf m':'smf l'}" style="width:${p}%"></div></div><span style="font-size:10px;color:var(--muted)">${p}%</span></div>`:'—'}</td>
       <td>
         ${s?
@@ -1021,7 +1060,7 @@ function rStudents(){
   });
 
   document.getElementById('sTbody').innerHTML=rows.join('')||
-    '<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--muted)">Talabalar yo\'q</td></tr>';
+    '<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--muted)">Talabalar yo\'q</td></tr>';
 }
 
 function doRst(sid,t){
@@ -1200,16 +1239,12 @@ function strtMT(elId,onEnd){
 function finTst(){
   const score=QS.reduce((a,q,i)=>a+(ANS[i]===q.answer?1:0),0),total=QS.length;
 
-  // Super admin preview — saqlamaslik
-  if(CU.isSA&&saMode==='student'){shwRes(score,total,true);return}
-
   const stus=DB.students();
   if(!stus[CU.id]) stus[CU.id]={id:CU.id,name:CU.name,password:'',completed:false,score:0,total:0,ts:null,testHistory:[],resetAll:false,resetByAdmins:[]};
   if(!stus[CU.id].testHistory) stus[CU.id].testHistory=[];
 
   const now=new Date().toISOString();
   const pct=total?Math.round(score/total*100):0;
-  // Natijani tarixga qo'shish
   stus[CU.id].testHistory.push({score,total,ts:now,percent:pct,passed:pct>=56});
   stus[CU.id].completed=true;
   stus[CU.id].score=score;
@@ -1237,22 +1272,11 @@ function shwRes(score,total,preview=false){
 
   const actions=document.getElementById('rActions');
   actions.innerHTML='';
-
-  if(preview){
-    // SA preview
-    const b=document.createElement('button');
-    b.className='btn btn-pu btn-sm';
-    b.textContent='← Admin paneliga qaytish';
-    b.onclick=()=>{saMode='admin';openAdmin(true)};
-    actions.appendChild(b);
-  } else {
-    // Oddiy talaba
-    const b=document.createElement('button');
-    b.className='btn btn-p';
-    b.textContent='📊 Natijalarimni ko\'rish';
-    b.onclick=()=>{openStudentPanel();goSTab('results')};
-    actions.appendChild(b);
-  }
+  const b=document.createElement('button');
+  b.className='btn btn-p';
+  b.textContent='📊 Natijalarimni ko\'rish';
+  b.onclick=()=>{openStudentPanel();goSTab('results')};
+  actions.appendChild(b);
 }
 
 function rdI(l,v){return `<div class="rdi"><div class="rdl">${l}</div><div class="rdv">${v}</div></div>`}
@@ -1269,7 +1293,10 @@ function doLogout(){
 }
 
 document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!document.getElementById('loginPage').classList.contains('hidden')) doLogin();
+  if(e.key==='Enter'){
+    if(!document.getElementById('loginPage').classList.contains('hidden')){doLogin();return}
+    if(!document.getElementById('testV2').classList.contains('hidden')){v2n();return}
+  }
 });
 </script>
 </body>
