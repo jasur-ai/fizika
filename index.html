@@ -297,6 +297,14 @@ table.dt tr:hover td{background:#f9f9fb}
 .apinp{padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none;width:110px;transition:border-color .2s}
 .apinp:focus{border-color:var(--primary)}
 .enter-hint{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;margin-bottom:20px;opacity:.55}
+/* HEMIS parol ogohlantirish */
+.pw-hemis-warn{display:flex;align-items:flex-start;gap:7px;padding:9px 12px;background:#fff5f5;border:1px solid #ffc8c8;border-radius:9px;margin-bottom:14px;font-size:11px;color:var(--red);font-weight:600;line-height:1.5}
+/* SA: student jadvalida parol ustuni */
+.sa-col{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);background:rgba(214,48,49,.06);padding:2px 7px;border-radius:5px;letter-spacing:.3px}
+/* Admin credentials o'zgartirish */
+.creds-change-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.cc-inp{padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
+.cc-inp:focus{border-color:var(--primary)}
 </style>
 </head>
 <body>
@@ -326,6 +334,9 @@ table.dt tr:hover td{background:#f9f9fb}
       <div class="ig">
         <label>HEMIS Parol <span class="req">*</span></label>
         <input type="password" id="fPass" placeholder="HEMIS parolingiz bilan kiring">
+      </div>
+      <div class="pw-hemis-warn">
+        🔒 HEMIS parolingiz bilan kiring. Parolni o'zgartirib bo'lmaydi — bu tizim xavfsizligi uchun.
       </div>
       <div id="lerr" class="errmsg"></div>
       <button class="lbtn" onclick="doLogin()"><span>Kirish</span><span>→</span></button>
@@ -460,7 +471,7 @@ table.dt tr:hover td{background:#f9f9fb}
             <option value="II-86/25">II-86/25</option>
           </select>
           <button class="btn btn-sm btn-ghost" onclick="rStudents()">🔄</button></div>
-        <div class="tw"><table class="dt"><thead><tr><th>#</th><th>Login ID</th><th>Ism Familya</th><th>Guruh</th><th>Natija</th><th>Holat</th><th>Sana</th><th>Amallar</th></tr></thead><tbody id="sTbody"></tbody></table></div>
+        <div class="tw"><table class="dt"><thead><tr><th>#</th><th>Login ID</th><th>Ism Familya</th><th>Guruh</th><th id="thPw" style="display:none">HEMIS Parol 🔒</th><th>Natija</th><th>Holat</th><th>Sana</th><th>Amallar</th></tr></thead><tbody id="sTbody"></tbody></table></div>
       </div>
     </div>
     <!-- QUESTIONS -->
@@ -491,7 +502,19 @@ table.dt tr:hover td{background:#f9f9fb}
         <div class="sr" id="qtRow"><div><div class="slb">Savol vaqti (daqiqa) — Variant 2</div><div class="sld">Har bir savol uchun vaqt</div></div><input type="number" class="ni2" id="qtInp" value="2" min="1" max="60" onchange="svSt('timePerQ',+this.value)"></div>
         <div class="sr"><div><div class="slb">♻️ Hamma uchun reset (global)</div><div class="sld">Barcha talabalar qayta topshira oladi — hamma adminlar ko'radi</div></div><button class="btn btn-y" onclick="resetAll()">Hammani reset</button></div>
       </div>
-      <div class="card"><div class="ctitle">Mening ma'lumotlarim</div><div class="cbox" id="myCreds"></div></div>
+      <div class="card"><div class="ctitle">Mening ma'lumotlarim</div><div class="cbox" id="myCreds"></div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">🔐 Parolni o'zgartirish</div>
+          <div class="creds-change-form">
+            <input type="password" class="cc-inp" id="ccOld" placeholder="Joriy parol">
+            <input type="password" class="cc-inp" id="ccNew" placeholder="Yangi parol (min 4 ta)">
+            <input type="text" class="cc-inp" id="ccLogin" placeholder="Yangi Login ID (ixtiyoriy)" style="grid-column:1/2">
+            <button class="btn btn-p btn-sm" style="grid-column:2/3;align-self:end" onclick="changeAdmCreds()">💾 Saqlash</button>
+          </div>
+          <div id="ccErr" style="font-size:11px;color:var(--red);margin-top:7px;display:none"></div>
+          <div id="ccOk" style="font-size:11px;color:var(--green);margin-top:7px;display:none">✅ Ma'lumotlar yangilandi!</div>
+        </div>
+      </div>
     </div>
     <!-- ADMINS -->
     <div id="tab-admins" class="tp">
@@ -634,14 +657,11 @@ const DB={
   svStu(s){this.set('stus',s)},
   svCfg(c){this.set('cfg',c)},
   svAdm(a){this.set('adms',a)},
-  svQs(q){this.set('qs',q)},
-  // Super admin paroli — maxfiy storage
-  getSAPw(){return this.get('sapw')||'super2024'},
-  setSAPw(pw){localStorage.setItem(this._k('sapw'),JSON.stringify(pw))}
+  svQs(q){this.set('qs',q)}
 };
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-let CU=null,QS=[],ANS={},v2i=0,tM=null,tQ=null,tlM=0,tlQ=0,saMode='admin';
+let CU=null,QS=[],ANS={},v2i=0,tM=null,tQ=null,tlM=0,tlQ=0,finished=false;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function showSaved(){const e=document.getElementById('sInd');e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)}
@@ -677,7 +697,7 @@ function onIdChange(){
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function doLogin(){
   const id=document.getElementById('fId').value.trim();
-  const pw=document.getElementById('fPass').value;
+  const pw=document.getElementById('fPass').value.trim(); // BUG#1 FIX: trim()
   const err=document.getElementById('lerr');
   err.style.display='none';
 
@@ -686,46 +706,26 @@ function doLogin(){
     err.style.display='block'; return;
   }
 
-  // ── Super Admin — student sifatida kiradi ──
-  if(id===SA_ID){
-    const stus=DB.students();
-    const info=VALID_STUDENTS[SA_ID];
-    if(stus[id]&&stus[id].password){
-      if(stus[id].password!==pw){err.textContent='❌ Parol noto\'g\'ri!';err.style.display='block';return}
-    } else {
-      // Birinchi marta — saqlash
-      if(pw.length<4){err.textContent='⚠️ Parol kamida 4 ta belgidan iborat bo\'lishi kerak!';err.style.display='block';return}
-      if(!stus[id]) stus[id]={id,name:info.name,password:'',completed:false,score:0,total:0,ts:null,testHistory:[],resetAll:false,resetByAdmins:[]};
-      stus[id].password=pw; stus[id].name=info.name;
-      DB.svStu(stus);
-    }
-    CU={id,name:info.name,isAdmin:false,isSA:true};
-    QS=DB.questions();openStudentPanel();return;
-  }
-
+  // ── Admin tekshiruvi (SA adminlar ro'yxatida bo'lmaydi — u faqat student) ──
   const adms=DB.admins();
-
-  // ── Admin ──
   if(adms[id]){
     if(adms[id].password!==pw){err.textContent='❌ Admin paroli noto\'g\'ri!';err.style.display='block';return}
     CU={id,name:adms[id].name,isAdmin:true,isSA:false};
     openAdmin(false); return;
   }
 
-  // ── Student ──
+  // ── Student (SA ham shu orqali kiradi — oddiy student kabi) ──
   if(VALID_STUDENTS[id]){
     const info=VALID_STUDENTS[id];
     const stus=DB.students();
 
     if(stus[id]&&stus[id].password){
-      // Qaytib kelgan talaba — parolni tekshir
       if(stus[id].password!==pw){
-        err.textContent='❌ Parol noto\'g\'ri! Avval o\'rnatgan parolingizni kiriting.';
+        err.textContent='❌ Parol noto\'g\'ri! Avval o\'rnatgan HEMIS parolingizni kiriting.';
         err.style.display='block'; return;
       }
-      CU={id,name:stus[id].name,isAdmin:false,isSA:false};
+      CU={id,name:stus[id].name,isAdmin:false,isSA:(id===SA_ID)};
     } else {
-      // Birinchi marta — parolni saqlash
       if(pw.length<4){
         err.textContent='⚠️ Parol kamida 4 ta belgidan iborat bo\'lishi kerak!';
         err.style.display='block'; return;
@@ -734,15 +734,14 @@ function doLogin(){
       stus[id].password=pw;
       stus[id].name=info.name;
       DB.svStu(stus);
-      CU={id,name:info.name,isAdmin:false,isSA:false};
+      CU={id,name:info.name,isAdmin:false,isSA:(id===SA_ID)};
     }
     QS=DB.questions();
     openStudentPanel();
     return;
   }
 
-  // ── Topilmadi ──
-  err.textContent='❌ Bunday student mavjud emas! HEMIS ID raqamingizni to\'g\'ri kiriting.';
+  err.textContent='❌ Bunday talaba mavjud emas! HEMIS ID raqamingizni to\'g\'ri kiriting.';
   err.style.display='block';
 }
 
@@ -973,9 +972,9 @@ function canRet(id){
   return s.resetAll||(s.resetByAdmins&&s.resetByAdmins.length>0);
 }
 
-// ─── SUPER ADMIN SWITCH (admin sidebar ichida) ───────────────────────────────
+// ─── SUPER ADMIN SWITCH ───────────────────────────────────────────────────────
 function saSwitch(){
-  saMode='student';
+  // SA admin paneldan o'z student paneliga o'tadi
   document.getElementById('adminPanel').classList.add('hidden');
   openStudentPanel();
 }
@@ -989,7 +988,6 @@ function openAdmin(isSA=false){
     document.getElementById('sbSA').classList.remove('hidden');
     document.getElementById('saSwitchWrap').classList.remove('hidden');
     document.getElementById('saLbl').textContent='← Talaba paneliga qaytish';
-    saMode='admin';
   } else {
     document.getElementById('sbSA').classList.add('hidden');
     document.getElementById('saSwitchWrap').classList.add('hidden');
@@ -1029,6 +1027,10 @@ function rStudents(){
   const grp=document.getElementById('sGrpF')?.value||'';
   const stus=DB.students();
 
+  // SA: parol ustunini ko'rsatish
+  const thPw=document.getElementById('thPw');
+  if(thPw) thPw.style.display=CU.isSA?'':'none';
+
   const allIds=Object.keys(VALID_STUDENTS);
   const rows=allIds.filter(id=>{
     if(grp&&VALID_STUDENTS[id].guruh!==grp)return false;
@@ -1039,16 +1041,20 @@ function rStudents(){
     const p=s&&s.total?Math.round(s.score/s.total*100):0;
     const rb=s&&s.resetAll?'<span class="bdg by">♻️ Global</span>':
       (s&&s.resetByAdmins&&s.resetByAdmins.includes(CU.id))?'<span class="bdg bb">🔓 Sizga</span>':'';
+    const pwCell=CU.isSA
+      ?`<td><span class="sa-col">${s&&s.password?s.password:'—'}</span></td>`
+      :'';
     return `<tr>
       <td style="font-size:11px;color:var(--muted)">${i+1}</td>
       <td><span class="mono">${id}</span></td>
       <td><b>${VALID_STUDENTS[id].name}</b></td>
       <td><span class="bdg bgr">${VALID_STUDENTS[id].guruh}</span></td>
+      ${pwCell}
       <td>${s&&s.completed?`<div class="sbr"><b style="font-size:11px">${s.score}/${s.total}</b><div class="smb"><div class="${p>=70?'smf':p>=56?'smf m':'smf l'}" style="width:${p}%"></div></div><span style="font-size:10px;color:var(--muted)">${p}%</span></div>`:'—'}</td>
       <td>
         ${s?
           (s.completed?'<span class="bdg bg">✅ Topshirdi</span>':'<span class="bdg bb">🔑 Kirdi</span>'):
-          '<span class="bdg bgr">⏳ Kutmoqda</span>'
+          '<span class="bdg bgr">⏳ Hali kirmadi</span>'
         } ${rb}
       </td>
       <td style="font-size:11px;color:var(--muted)">${s&&s.ts?new Date(s.ts).toLocaleDateString('uz-UZ'):'—'}</td>
@@ -1060,7 +1066,7 @@ function rStudents(){
   });
 
   document.getElementById('sTbody').innerHTML=rows.join('')||
-    '<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--muted)">Talabalar yo\'q</td></tr>';
+    `<tr><td colspan="${CU.isSA?9:8}" style="text-align:center;padding:18px;color:var(--muted)">Talabalar yo\'q</td></tr>`;
 }
 
 function doRst(sid,t){
@@ -1085,7 +1091,7 @@ function expXls(){
       s?s.score:'', s?s.total:'',
       s&&s.total?Math.round(s.score/s.total*100):'',
       s&&s.ts?s.ts:'',
-      s?(s.completed?'Topshirdi':'Kirmadi'):'Kutmoqda'
+      s?(s.completed?'Topshirdi':s.password?'Kirdi, test topshirmadi':'Hali kirmadi'):'Hali kirmadi'
     ]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
@@ -1141,11 +1147,57 @@ function rSettings(){
   document.getElementById('qtRow').style.display=c.variant===2?'':'none';
   const adms=DB.admins(),me=adms[CU.id]||{};
   document.getElementById('myCreds').innerHTML=`
-    <div class="ci"><div class="cl">Unique Admin ID</div><div class="cv">${CU.id}</div></div>
+    <div class="ci"><div class="cl">Login ID</div><div class="cv">${CU.id}</div></div>
     <div class="ci"><div class="cl">Ism</div><div class="cv">${CU.name}</div></div>
-    <div class="ci"><div class="cl">Parol</div><div class="cv cvr">${CU.isSA?'(maxfiy)':me.password||'—'}</div></div>
-    ${CU.isSA?'<div class="ci"><div class="cl">Rol</div><div class="cv" style="color:var(--purple)">⭐ Super Admin</div></div>':''}
+    <div class="ci"><div class="cl">Parol</div><div class="cv cvr">${CU.isSA?'(maxfiy — HEMIS)':me.password||'—'}</div></div>
+    ${CU.isSA?'<div class="ci"><div class="cl">Rol</div><div class="cv" style="color:var(--purple)">⭐ Super Admin (Ghost)</div></div>':''}
   `;
+  // Reset change form
+  ['ccOld','ccNew','ccLogin'].forEach(x=>{const el=document.getElementById(x);if(el)el.value='';});
+  ['ccErr','ccOk'].forEach(x=>{const el=document.getElementById(x);if(el)el.style.display='none';});
+}
+
+function changeAdmCreds(){
+  const oldPw=document.getElementById('ccOld').value.trim();
+  const newPw=document.getElementById('ccNew').value.trim();
+  const newLogin=document.getElementById('ccLogin').value.trim();
+  const errEl=document.getElementById('ccErr');
+  const okEl=document.getElementById('ccOk');
+  errEl.style.display='none';okEl.style.display='none';
+
+  // SA — HEMIS paroli o'zgartirib bo'lmaydi
+  if(CU.isSA){errEl.textContent='⚠️ Super Admin uchun parol HEMIS tizimida o\'zgartiriladi.';errEl.style.display='block';return}
+
+  const adms=DB.admins();
+  if(!adms[CU.id]){errEl.textContent='❌ Xatolik: admin topilmadi.';errEl.style.display='block';return}
+
+  // Joriy parol tekshirish
+  if(adms[CU.id].password!==oldPw){
+    errEl.textContent='❌ Joriy parol noto\'g\'ri!';errEl.style.display='block';return;
+  }
+
+  // Login ID o'zgartirish (ixtiyoriy)
+  if(newLogin&&newLogin!==CU.id){
+    if(adms[newLogin]){errEl.textContent='⚠️ Bu Login ID allaqachon band!';errEl.style.display='block';return}
+    if(newLogin===SA_ID){errEl.textContent='⚠️ Bu ID band!';errEl.style.display='block';return}
+    adms[newLogin]={...adms[CU.id]};
+    delete adms[CU.id];
+    CU.id=newLogin;
+    document.getElementById('sbId').textContent=CU.id;
+  }
+
+  // Yangi parol
+  if(newPw){
+    if(newPw.length<4){errEl.textContent='⚠️ Yangi parol kamida 4 ta belgi bo\'lsin!';errEl.style.display='block';return}
+    adms[CU.id].password=newPw;
+  }
+
+  DB.svAdm(adms);
+  okEl.style.display='block';
+  document.getElementById('ccOld').value='';
+  document.getElementById('ccNew').value='';
+  document.getElementById('ccLogin').value='';
+  rSettings();
 }
 function setV(v){const c=DB.cfg();c.variant=v;DB.svCfg(c);rSettings();toast(`✅ Variant ${v} tanlandi`)}
 function svSt(k,v){const c=DB.cfg();c[k]=v;DB.svCfg(c);rSettings()}
@@ -1181,16 +1233,18 @@ function rmAdm(id){openM("O'chirish",`${id} o'chirilsinmi?`,()=>{const a=DB.admi
 // ─── TEST V1 ──────────────────────────────────────────────────────────────────
 function startV1(){
   show('testV1');const c=DB.cfg();tlM=c.totalTime*60;
+  finished=false; // BUG#2 FIX
   document.getElementById('v1Name').textContent=CU.name;
   bldV1();updV1P();strtMT('v1T',()=>subV1(true));
 }
+function esc(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
 function bldV1(){
   document.getElementById('v1Qs').innerHTML=QS.map((q,qi)=>`
     <div class="qc"><div class="qn">Savol ${qi+1} / ${QS.length}</div>
-    <div class="qt">${q.question}</div>
+    <div class="qt">${esc(q.question)}</div>
     <ul class="opts">${q.options.map((o,oi)=>`
       <li class="opt${ANS[qi]===oi?' sel':''}" id="o_${qi}_${oi}" onclick="selV1(${qi},${oi})">
-        <div class="ol">${'ABCD'[oi]}</div><span class="ot">${o}</span></li>`).join('')}</ul></div>`).join('');
+        <div class="ol">${'ABCD'[oi]}</div><span class="ot">${esc(o)}</span></li>`).join('')}</ul></div>`).join('');
 }
 function selV1(qi,oi){ANS[qi]=oi;for(let i=0;i<4;i++){const e=document.getElementById(`o_${qi}_${i}`);if(e)e.className='opt'+(i===oi?' sel':'')}updV1P()}
 function updV1P(){
@@ -1203,21 +1257,22 @@ function subV1(auto=false){clearInterval(tM);finTst()}
 // ─── TEST V2 ──────────────────────────────────────────────────────────────────
 function startV2(){
   show('testV2');const c=DB.cfg();tlM=c.totalTime*60;v2i=0;
+  finished=false; // BUG#2 FIX
   document.getElementById('v2Name').textContent=CU.name;
   rndrV2();strtMT('v2TT',()=>subV2(true));strtQT();
 }
 function rndrV2(){
   const q=QS[v2i];
-  document.getElementById('v2PF').style.width=(v2i/QS.length*100)+'%';
+  document.getElementById('v2PF').style.width=((v2i+1)/QS.length*100)+'%'; // BUG#4 FIX: +1
   document.getElementById('v2PT').textContent=`${v2i+1}/${QS.length}`;
   document.getElementById('v2Prev').style.display=v2i>0?'':'none';
   document.getElementById('v2Next').textContent=v2i===QS.length-1?'✅ Topshirish':'Keyingi →';
   document.getElementById('v2Q').innerHTML=`
     <div class="qn">Savol ${v2i+1} / ${QS.length}</div>
-    <div class="qt">${q.question}</div>
+    <div class="qt">${esc(q.question)}</div>
     <ul class="opts">${q.options.map((o,oi)=>`
       <li class="opt${ANS[v2i]===oi?' sel':''}" id="v2o_${oi}" onclick="selV2(${oi})">
-        <div class="ol">${'ABCD'[oi]}</div><span class="ot">${o}</span></li>`).join('')}</ul>`;
+        <div class="ol">${'ABCD'[oi]}</div><span class="ot">${esc(o)}</span></li>`).join('')}</ul>`;
 }
 function selV2(oi){ANS[v2i]=oi;for(let i=0;i<4;i++){const e=document.getElementById(`v2o_${i}`);if(e)e.className='opt'+(i===oi?' sel':'')}}
 function v2n(auto=false){if(v2i>=QS.length-1){clearInterval(tM);clearInterval(tQ);finTst();return}v2i++;rndrV2();if(!auto)strtQT()}
@@ -1232,7 +1287,24 @@ function subV2(auto=false){clearInterval(tM);clearInterval(tQ);finTst()}
 // ─── MAIN TIMER ───────────────────────────────────────────────────────────────
 function strtMT(elId,onEnd){
   clearInterval(tM);const e=document.getElementById(elId);if(e)e.textContent=fmt(tlM);
-  tM=setInterval(()=>{tlM--;const el=document.getElementById(elId);if(el){el.textContent=fmt(tlM);if(el.className&&el.className.includes('tmr'))el.className='tmr'+(tlM<300?' warn':'')+(tlM<60?' danger':'')}if(tlM<=0){clearInterval(tM);onEnd()}},1000);
+  tM=setInterval(()=>{
+    tlM--;
+    const el=document.getElementById(elId);
+    if(el){
+      el.textContent=fmt(tlM);
+      // BUG#5 FIX: v2TT is a <span>, not .tmr — update parent .tmr div instead
+      if(el.className&&el.className.includes('tmr')){
+        el.className='tmr'+(tlM<300?' warn':'')+(tlM<60?' danger':'');
+      } else if(elId==='v2TT'){
+        // Umumiy taymer span — yonidagi .tmr div ni range
+        const tmrDiv=document.getElementById('v2QT');
+        // Only show total time danger hint via text color
+        el.style.color=tlM<300?'#f39c12':tlM<60?'#d63031':'';
+        el.style.fontWeight=tlM<300?'800':'';
+      }
+    }
+    if(tlM<=0){clearInterval(tM);onEnd()}
+  },1000);
 }
 
 // ─── FINISH TEST ──────────────────────────────────────────────────────────────
