@@ -296,27 +296,6 @@ table.dt tr:hover td{background:#f9f9fb}
 .qcb{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;background:rgba(12,36,97,.07);border-radius:20px;font-size:12px;font-weight:700;color:var(--primary)}
 .apinp{padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none;width:110px;transition:border-color .2s}
 .apinp:focus{border-color:var(--primary)}
-/* Test aktivlashtirish kartasi */
-.test-activate-card{border-radius:16px;padding:22px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;transition:all .4s}
-.tac-off{background:linear-gradient(135deg,#f8f9fa,#ecf0f1);border:2px solid var(--border)}
-.tac-on{background:linear-gradient(135deg,rgba(0,184,148,.08),rgba(0,206,201,.05));border:2px solid rgba(0,184,148,.35)}
-.tac-left{}
-.tac-status{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.tac-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:background .3s}
-.tac-dot-off{background:#b2bec3}
-.tac-dot-on{background:var(--green);box-shadow:0 0 0 3px rgba(0,184,148,.2);animation:dotPulse 2s ease-in-out infinite}
-@keyframes dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(0,184,148,.2)}50%{box-shadow:0 0 0 6px rgba(0,184,148,.05)}}
-.tac-title{font-size:15px;font-weight:800;color:var(--text)}
-.tac-sub{font-size:12px;color:var(--muted);line-height:1.5}
-.tac-btn-on{background:linear-gradient(135deg,var(--green),#00cec9);color:#fff;border:none;border-radius:11px;padding:11px 24px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(0,184,148,.35)}
-.tac-btn-on:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,184,148,.45)}
-.tac-btn-off{background:linear-gradient(135deg,var(--red),var(--orange));color:#fff;border:none;border-radius:11px;padding:11px 24px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(214,48,49,.25)}
-.tac-btn-off:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(214,48,49,.35)}
-/* Student: test yopiq holati */
-.test-locked{text-align:center;padding:40px 20px}
-.test-locked-icon{font-size:52px;margin-bottom:14px}
-.test-locked-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px}
-.test-locked-sub{font-size:13px;color:var(--muted);line-height:1.6}
 .enter-hint{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;margin-bottom:20px;opacity:.55}
 /* HEMIS parol ogohlantirish */
 .pw-hemis-warn{display:flex;align-items:flex-start;gap:7px;padding:9px 12px;background:#fff5f5;border:1px solid #ffc8c8;border-radius:9px;margin-bottom:14px;font-size:11px;color:var(--red);font-weight:600;line-height:1.5}
@@ -498,8 +477,6 @@ table.dt tr:hover td{background:#f9f9fb}
     <!-- QUESTIONS -->
     <div id="tab-questions" class="tp">
       <div class="ph"><div class="ph-l"><div class="pt-title">📝 Savollar</div><div class="pt-sub">Excel orqali test savollarini yuklang</div></div></div>
-      <!-- TEST AKTIVLASHTIRISH KARTASI -->
-      <div id="testActivateCard"></div>
       <div class="card">
         <div class="ctitle">Excel yuklash</div>
         <div class="uz" id="dz" onclick="document.getElementById('xlF').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="hDrop(event)">
@@ -665,7 +642,7 @@ const DB={
   _k:k=>'tq7_'+k,
   get(k){try{return JSON.parse(localStorage.getItem(this._k(k)))}catch{return null}},
   set(k,v){localStorage.setItem(this._k(k),JSON.stringify(v));showSaved()},
-  cfg(){return this.get('cfg')||{variant:1,totalTime:40,timePerQ:2,testActive:false}},
+  cfg(){return this.get('cfg')||{variant:1,totalTime:40,timePerQ:2}},
   admins(){
     let a=this.get('adms');if(a)return a;
     a={'TDIU_ADMIN_001':{name:'Bosh Admin',password:'admin123'},'TDIU_ADMIN_002':{name:'Admin 2',password:'admin123'}}; 
@@ -829,29 +806,17 @@ function rSHome(){
       </div>`;
   } else {
     const qs=DB.questions();
-    const cfg=DB.cfg();
-    if(!cfg.testActive||!qs.length){
-      contentHtml=`
-        <div class="test-card">
-          <div class="test-locked">
-            <div class="test-locked-icon">🔒</div>
-            <div class="test-locked-title">Test hali boshlanmagan</div>
-            <div class="test-locked-sub">Admin testni faollashtirguncha kuting.<br>Faollashtirilganda bu sahifada avtomatik ko'rinadi.</div>
+    contentHtml=`
+      <div class="test-card">
+        <div style="text-align:center;padding:20px 10px">
+          <div style="font-size:44px;margin-bottom:12px">📝</div>
+          <div style="font-size:16px;font-weight:800;margin-bottom:6px">Test sizni kutmoqda</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:18px">
+            ${qs.length} ta savol · ${DB.cfg().totalTime} daqiqa
           </div>
-        </div>`;
-    } else {
-      contentHtml=`
-        <div class="test-card">
-          <div style="text-align:center;padding:20px 10px">
-            <div style="font-size:44px;margin-bottom:12px">📝</div>
-            <div style="font-size:16px;font-weight:800;margin-bottom:6px">Test sizni kutmoqda</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:18px">
-              ${qs.length} ta savol · ${cfg.totalTime} daqiqa
-            </div>
-            <button class="btn btn-g btn-lg" onclick="goSTab('tests')">▶ Testni boshlash</button>
-          </div>
-        </div>`;
-    }
+          <button class="btn btn-g btn-lg" onclick="goSTab('tests')">▶ Testni boshlash</button>
+        </div>
+      </div>`;
   }
 
   el.innerHTML=`
@@ -872,19 +837,13 @@ function rSTests(){
   const s=stus[CU.id];
   const canTake=!s||!s.completed||canRet(CU.id);
 
-  // Test faol emas yoki savollar yo'q
-  if(!cfg.testActive||!qs.length){
+  if(!qs.length){
     el.innerHTML=`
       <div class="test-card">
-        <div class="test-locked">
-          <div class="test-locked-icon">🔒</div>
-          <div class="test-locked-title">Test hali boshlanmagan</div>
-          <div class="test-locked-sub">
-            ${!qs.length
-              ?'Savollar hali yuklanmagan. Admin yuklagan vaqtda bu yerda ko\'rinadi.'
-              :'Admin testni faollashtirguncha kuting. Faollashtirilganda avtomatik ko\'rinadi.'
-            }
-          </div>
+        <div class="test-no-questions">
+          <div class="test-no-icon">⏳</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px">Hozircha test mavjud emas</div>
+          <div class="test-no-text">Admin test savollarini yuklaganidan keyin bu yerda ko'rinadi.</div>
         </div>
       </div>`;
     return;
@@ -1051,7 +1010,7 @@ function rStats(){
   const done=stus.filter(s=>s.completed);
   const avg=done.length?Math.round(done.reduce((a,b)=>a+(b.score/Math.max(b.total,1)*100),0)/done.length):0;
   document.getElementById('sGrid').innerHTML=`
-    ${testStatusStatHtml()}
+    <div class="sc sc-b"><div class="si">👥</div><div class="sv">${Object.keys(VALID_STUDENTS).length}</div><div class="sl">Jami talabalar (ro'yxat)</div></div>
     <div class="sc sc-g"><div class="si">🔑</div><div class="sv">${stus.length}</div><div class="sl">Tizimga kirganlar</div></div>
     <div class="sc sc-y"><div class="si">✅</div><div class="sv">${done.length}</div><div class="sl">Test topshirdi</div></div>
     <div class="sc sc-r"><div class="si">📈</div><div class="sv">${avg}%</div><div class="sl">O'rtacha natija</div></div>`;
@@ -1140,66 +1099,8 @@ function expXls(){
 }
 
 // ─── QUESTIONS ────────────────────────────────────────────────────────────────
-function renderActivateCard(){
-  const qs=DB.questions();
-  const cfg=DB.cfg();
-  const active=cfg.testActive;
-  const card=document.getElementById('testActivateCard');
-  if(!card)return;
-
-  if(!qs.length){
-    card.innerHTML='';
-    return;
-  }
-
-  card.innerHTML=`
-    <div class="test-activate-card ${active?'tac-on':'tac-off'}">
-      <div class="tac-left">
-        <div class="tac-status">
-          <div class="tac-dot ${active?'tac-dot-on':'tac-dot-off'}"></div>
-          <div class="tac-title">${active?'✅ Test faol — talabalar ko\'ra oladi':'⏸ Test to\'xtatilgan — talabalar ko\'ra olmaydi'}</div>
-        </div>
-        <div class="tac-sub">
-          ${active
-            ?`${qs.length} ta savol · ${cfg.totalTime} daqiqa · Variant ${cfg.variant} — Talabalar hozir test topa oladi`
-            ?`${qs.length} ta savol yuklangan. Testni boshlash uchun yashil tugmani bosing.`
-            :`${qs.length} ta savol yuklangan. Testni boshlash uchun yashil tugmani bosing.`
-          }
-        </div>
-      </div>
-      <button class="${active?'tac-btn-off':'tac-btn-on'}" onclick="toggleTest()">
-        ${active?'⏹ Testni to\'xtatish':'▶ Testni boshlash'}
-      </button>
-    </div>`;
-}
-
-function toggleTest(){
-  const cfg=DB.cfg();
-  const qs=DB.questions();
-  if(!qs.length&&!cfg.testActive){toast('⚠️ Avval savollarni yuklang!');return}
-  cfg.testActive=!cfg.testActive;
-  DB.svCfg(cfg);
-  renderActivateCard();
-  // Stats kartasini ham yangilash
-  const statCard=document.getElementById('testStatusStat');
-  if(statCard) statCard.innerHTML=testStatusStatHtml();
-  toast(cfg.testActive?'✅ Test faollashtirildi — talabalar ko\'ra oladi':'⏸ Test to\'xtatildi');
-}
-
-function testStatusStatHtml(){
-  const cfg=DB.cfg();
-  const qs=DB.questions();
-  const active=cfg.testActive&&qs.length>0;
-  return `<div class="sc ${active?'sc-g':'sc-r'}" style="cursor:pointer" onclick="goTab('questions',document.getElementById('nav-questions'))" title="Savollar bo'limiga o'tish">
-    <div class="si">${active?'🟢':'🔴'}</div>
-    <div class="sv" style="font-size:18px">${active?'FAOL':'TO\'XTATILGAN'}</div>
-    <div class="sl">Test holati · ${qs.length} ta savol</div>
-  </div>`;
-}
-
 function rQPrev(){
   const qs=DB.questions(),c=document.getElementById('qPC');
-  renderActivateCard();
   if(!qs.length){c.style.display='none';return}
   c.style.display='block';document.getElementById('qCB').textContent=qs.length+' ta savol';
   document.getElementById('qTb').innerHTML=qs.map((q,i)=>`
@@ -1230,14 +1131,12 @@ function rdXl(file){
       const data=XLSX.utils.sheet_to_json(ws,{header:1}),mp={'A':0,'B':1,'C':2,'D':3},qs=[];
       for(let i=1;i<data.length;i++){const row=data[i];if(!row[0]||!row[5])continue;qs.push({question:String(row[0]).trim(),options:[String(row[1]||'').trim(),String(row[2]||'').trim(),String(row[3]||'').trim(),String(row[4]||'').trim()],answer:mp[String(row[5]).trim().toUpperCase()]??0})}
       if(!qs.length){toast('⚠️ Savollar topilmadi');return}
-      DB.svQs(qs);rQPrev();toast(`✅ ${qs.length} ta savol yuklandi — endi testni faollashtiring!`);
+      DB.svQs(qs);rQPrev();toast(`✅ ${qs.length} ta savol yuklandi`);
     }catch{toast('❌ Fayl o\'qishda xatolik')}
   };r.readAsArrayBuffer(file);
 }
-function clrQs(){openM('Savollarni tozalash','Barcha savollar o\'chiriladi va test to\'xtatiladi!',()=>{
-  const cfg=DB.cfg();cfg.testActive=false;DB.svCfg(cfg);
-  DB.svQs([]);rQPrev();toast('🗑 Tozalandi — test ham to\'xtatildi');
-})}
+function clrQs(){openM('Savollarni tozalash','Barcha savollar o\'chiriladi!',()=>{DB.svQs([]);rQPrev();toast('🗑 Tozalandi')})}
+
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 function rSettings(){
   const c=DB.cfg();
