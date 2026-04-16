@@ -144,7 +144,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .sub-id{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);font-weight:600}
 .sub-nm{font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}
 .sa-sbadge{display:inline-flex;align-items:center;gap:3px;margin-top:5px;padding:2px 7px;background:rgba(108,92,231,.2);border:1px solid rgba(162,155,254,.25);border-radius:20px;font-size:9px;font-weight:700;color:#a29bfe;letter-spacing:.5px;text-transform:uppercase}
-/* SA switch inside sidebar */
 .sa-switch-wrap{padding:8px 9px;border-top:1px solid rgba(255,255,255,.06)}
 .sa-switch-btn{width:100%;padding:9px 14px;background:linear-gradient(135deg,rgba(108,92,231,.25),rgba(162,155,254,.15));border:1px solid rgba(162,155,254,.2);border-radius:9px;color:#a29bfe;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s}
 .sa-switch-btn:hover{background:linear-gradient(135deg,rgba(108,92,231,.4),rgba(162,155,254,.25))}
@@ -297,14 +296,34 @@ table.dt tr:hover td{background:#f9f9fb}
 .apinp{padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none;width:110px;transition:border-color .2s}
 .apinp:focus{border-color:var(--primary)}
 .enter-hint{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;margin-bottom:20px;opacity:.55}
-/* HEMIS parol ogohlantirish */
 .pw-hemis-warn{display:flex;align-items:flex-start;gap:7px;padding:9px 12px;background:#fff5f5;border:1px solid #ffc8c8;border-radius:9px;margin-bottom:14px;font-size:11px;color:var(--red);font-weight:600;line-height:1.5}
-/* SA: student jadvalida parol ustuni */
 .sa-col{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);background:rgba(214,48,49,.06);padding:2px 7px;border-radius:5px;letter-spacing:.3px}
-/* Admin credentials o'zgartirish */
 .creds-change-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .cc-inp{padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
 .cc-inp:focus{border-color:var(--primary)}
+
+/* ── TEST STATUS BADGE ── */
+.test-status-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:11px;margin-bottom:14px;font-size:12px;font-weight:600}
+.test-status-bar.active{background:rgba(0,184,148,.08);border:1px solid rgba(0,184,148,.2);color:#00695c}
+.test-status-bar.inactive{background:rgba(214,48,49,.06);border:1px solid rgba(214,48,49,.15);color:#c62828}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-dot.active{background:var(--green);box-shadow:0 0 0 3px rgba(0,184,148,.2);animation:pulse 2s infinite}
+.status-dot.inactive{background:var(--red)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(0,184,148,.2)}50%{box-shadow:0 0 0 6px rgba(0,184,148,.05)}}
+
+/* datetime input */
+.dt-inp{padding:8px 11px;border:2px solid var(--border);border-radius:9px;font-size:12px;font-family:inherit;outline:none;transition:border-color .2s;color:var(--text);background:#fff}
+.dt-inp:focus{border-color:var(--primary)}
+
+/* test name input in settings */
+.tn-inp{padding:8px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;min-width:220px;max-width:260px}
+.tn-inp:focus{border-color:var(--primary)}
+
+/* inactive test card for students */
+.test-locked{background:linear-gradient(135deg,rgba(214,48,49,.04),rgba(225,112,85,.03));border:1px solid rgba(214,48,49,.12);border-radius:14px;padding:28px;text-align:center;margin-bottom:14px}
+.test-locked-icon{font-size:48px;margin-bottom:12px}
+.test-locked-title{font-size:16px;font-weight:800;color:var(--red);margin-bottom:6px}
+.test-locked-text{font-size:12px;color:var(--muted);line-height:1.7}
 </style>
 </head>
 <body>
@@ -432,7 +451,6 @@ table.dt tr:hover td{background:#f9f9fb}
       <div class="sub-nm" id="sbNm"></div>
       <div class="sa-sbadge hidden" id="sbSA">⭐ Super Admin</div>
     </div>
-    <!-- SA TEST SWITCH — faqat super admin uchun -->
     <div class="sa-switch-wrap hidden" id="saSwitchWrap">
       <button class="sa-switch-btn" onclick="saSwitch()">
         <div class="sadot"></div>
@@ -494,14 +512,55 @@ table.dt tr:hover td{background:#f9f9fb}
     </div>
     <!-- SETTINGS -->
     <div id="tab-settings" class="tp">
-      <div class="ph"><div class="ph-l"><div class="pt-title">⚙️ Sozlamalar</div><div class="pt-sub">Test rejimi va vaqt</div></div></div>
+      <div class="ph"><div class="ph-l"><div class="pt-title">⚙️ Sozlamalar</div><div class="pt-sub">Test rejimi, holati va vaqt</div></div></div>
+
+      <!-- ── TEST HOLATI CARD ── -->
       <div class="card">
-        <div class="ctitle">Test varianti</div>
+        <div class="ctitle">🟢 Test holati va nomi</div>
+
+        <!-- Test nomi -->
+        <div class="sr">
+          <div>
+            <div class="slb">Test nomi</div>
+            <div class="sld">Talabalar ko'radigan test sarlavhasi</div>
+          </div>
+          <input type="text" class="tn-inp" id="tnInp" placeholder="Test nomi..." onchange="svTestName(this.value)">
+        </div>
+
+        <!-- Aktiv / Deaktiv toggle -->
+        <div class="sr">
+          <div>
+            <div class="slb">Test holati</div>
+            <div class="sld">Aktiv — talabalar test topshira oladi. Deaktiv — test yopiq.</div>
+          </div>
+          <div id="taToggle"></div>
+        </div>
+
+        <!-- Avtomatik deaktiv vaqti -->
+        <div class="sr">
+          <div>
+            <div class="slb">Avtomatik deaktiv vaqti</div>
+            <div class="sld">Belgilangan sana va soatda test avtomatik yopiladi. Bo'sh qolsa — avtomatik yopilmaydi.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+            <input type="datetime-local" class="dt-inp" id="tdInp" onchange="svDeactTime(this.value)">
+            <button class="btn btn-xs btn-ghost" onclick="clrDeactTime()">✕ Tozalash</button>
+          </div>
+        </div>
+
+        <!-- Joriy holat ko'rsatgichi -->
+        <div id="statusPreview" style="margin-top:4px"></div>
+      </div>
+
+      <!-- Test varianti -->
+      <div class="card">
+        <div class="ctitle">Test varianti va vaqt</div>
         <div class="sr"><div><div class="slb">Test ko'rinishi</div><div class="sld"><b>Variant 1:</b> Barcha savollar bir sahifada — oxirida "Topshirish"<br><b>Variant 2:</b> Birdan 1 ta savol — har biri uchun alohida vaqt</div></div><div class="vt"><button class="vb" id="vb1" onclick="setV(1)">Variant 1</button><button class="vb" id="vb2" onclick="setV(2)">Variant 2</button></div></div>
         <div class="sr"><div><div class="slb">Umumiy vaqt (daqiqa)</div><div class="sld">Testning umumiy davomiyligi</div></div><input type="number" class="ni2" id="ttInp" value="40" min="1" max="300" onchange="svSt('totalTime',+this.value)"></div>
         <div class="sr" id="qtRow"><div><div class="slb">Savol vaqti (daqiqa) — Variant 2</div><div class="sld">Har bir savol uchun vaqt</div></div><input type="number" class="ni2" id="qtInp" value="2" min="1" max="60" onchange="svSt('timePerQ',+this.value)"></div>
         <div class="sr"><div><div class="slb">♻️ Hamma uchun reset (global)</div><div class="sld">Barcha talabalar qayta topshira oladi — hamma adminlar ko'radi</div></div><button class="btn btn-y" onclick="resetAll()">Hammani reset</button></div>
       </div>
+
       <div class="card"><div class="ctitle">Mening ma'lumotlarim</div><div class="cbox" id="myCreds"></div>
         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="font-size:13px;font-weight:700;margin-bottom:10px">🔐 Parolni o'zgartirish</div>
@@ -538,13 +597,10 @@ table.dt tr:hover td{background:#f9f9fb}
 
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const SA_ID = '324251104247'; // Super admin — maxfiy
+const SA_ID = '324251104247';
 
-// Barcha talabalar (HEMIS ID → to'liq ism) — SA ham oddiy talaba sifatida
 const VALID_STUDENTS = {
-  // ── Super Admin (oddiy talaba sifatida) ──────────────────────────
   '324251104247': {name:"ABDUVAYITOV JASURJON IZZATILLA O'G'LI",  kurs:'1-kurs', guruh:'II-85/25'},
-  // ── II-85/25 ────────────────────────────────────────────────────
   '324251104270': {name:"ARABBOYEVA MOHLAROY DILSHOD QIZI",       kurs:'1-kurs', guruh:'II-85/25'},
   '324251104264': {name:"ATAXONOV RO'ZMATJON MAXMUD O'G'LI",      kurs:'1-kurs', guruh:'II-85/25'},
   '324251104274': {name:"BORISOV TEMURBEK NODIRBEKOVICH",          kurs:'1-kurs', guruh:'II-85/25'},
@@ -568,7 +624,6 @@ const VALID_STUDENTS = {
   '324251104261': {name:"TO'XTABOYEV NOZIMJON AZZAMJON O'G'LI",   kurs:'1-kurs', guruh:'II-85/25'},
   '324251104278': {name:"TURDIYEV BEKZOD RUSTAM O'G'LI",          kurs:'1-kurs', guruh:'II-85/25'},
   '324251104268': {name:"UBAYDULLAEV RUSLAN KUATOVICH",            kurs:'1-kurs', guruh:'II-85/25'},
-  // ── II-86/25 ────────────────────────────────────────────────────
   '324251104316': {name:"ABDALIYEV XUSHNUD JASUR O'G'LI",         kurs:'1-kurs', guruh:'II-86/25'},
   '324251105399': {name:"ABDUGAPIROV BEXRUZBEK ABDUQODIR O'G'LI", kurs:'1-kurs', guruh:'II-86/25'},
   '324251104304': {name:"ABDUJABBOROV OZODBEK BOTIR O'G'LI",      kurs:'1-kurs', guruh:'II-86/25'},
@@ -590,7 +645,6 @@ const VALID_STUDENTS = {
   '324251104292': {name:"SAYLAVOVA GULBANU ABDIG'ANI QIZI",        kurs:'1-kurs', guruh:'II-86/25'},
   '324251104309': {name:"TO'LQINOV KOMILJON DILSHODOVICH",         kurs:'1-kurs', guruh:'II-86/25'},
   '324251104311': {name:"XABIBULLAYEV UMIDJON XOLMUROD O'G'LI",   kurs:'1-kurs', guruh:'II-86/25'},
-  // ── II-84/25 ────────────────────────────────────────────────────
   '324251104240': {name:"ABDIJANOVA FERUZA BAXTIYOR QIZI",         kurs:'1-kurs', guruh:'II-84/25'},
   '324251104216': {name:"ABDUQAXXOROV ISFANDIYOR NODIRBEK O'G'LI", kurs:'1-kurs', guruh:'II-84/25'},
   '324251104208': {name:"AHMEDOV MUHAMMAD ABDIMANNON O'G'LI",      kurs:'1-kurs', guruh:'II-84/25'},
@@ -642,11 +696,21 @@ const DB={
   _k:k=>'tq7_'+k,
   get(k){try{return JSON.parse(localStorage.getItem(this._k(k)))}catch{return null}},
   set(k,v){localStorage.setItem(this._k(k),JSON.stringify(v));showSaved()},
-  cfg(){return this.get('cfg')||{variant:1,totalTime:40,timePerQ:2}},
+  cfg(){
+    const d=this.get('cfg');
+    // Merge defaults so old saved configs also get new fields
+    return Object.assign({
+      variant:1,
+      totalTime:40,
+      timePerQ:2,
+      testName:'TDIU Online Test',
+      testActive:true,
+      testDeactivateAt:null   // ISO string or null
+    }, d||{});
+  },
   admins(){
     let a=this.get('adms');if(a)return a;
-    a={'TDIU_ADMIN_001':{name:'Bosh Admin',password:'admin123'},'TDIU_ADMIN_002':{name:'Admin 2',password:'admin123'}}; 
-    // SA maxfiy — adminlar ro'yxatiga qo'shilmaydi
+    a={'TDIU_ADMIN_001':{name:'Bosh Admin',password:'admin123'},'TDIU_ADMIN_002':{name:'Admin 2',password:'admin123'}};
     this.set('adms',a);return a;
   },
   questions(){
@@ -675,72 +739,114 @@ function toast(m,d=2200){const e=document.createElement('div');e.className='toas
 function openM(t,b,ok){document.getElementById('mT').textContent=t;document.getElementById('mB').textContent=b;document.getElementById('modal').classList.remove('hidden');document.getElementById('mOk').onclick=()=>{clsM();ok()}}
 function clsM(){document.getElementById('modal').classList.add('hidden')}
 
+// ─── TEST ACTIVE LOGIC ────────────────────────────────────────────────────────
+function isTestActive(){
+  const c=DB.cfg();
+  if(!c.testActive) return false;
+  // Auto-deactivate check
+  if(c.testDeactivateAt){
+    const deactTime=new Date(c.testDeactivateAt);
+    if(!isNaN(deactTime)&&new Date()>=deactTime){
+      // Trigger auto-deactivation
+      c.testActive=false;
+      DB.svCfg(c);
+      return false;
+    }
+  }
+  return true;
+}
+
+function toggleTestActive(){
+  const c=DB.cfg();
+  const newState=!c.testActive;
+  c.testActive=newState;
+  // If activating and no deactivate time set, auto-set 24h from now
+  if(newState){
+    if(!c.testDeactivateAt){
+      const d=new Date();
+      d.setHours(d.getHours()+24);
+      c.testDeactivateAt=toLocalDatetimeStr(d);
+    }
+    toast('✅ Test aktivlashtirildi');
+  } else {
+    toast('⛔ Test deaktiv qilindi');
+  }
+  DB.svCfg(c);
+  rSettings();
+}
+
+function svTestName(val){
+  const c=DB.cfg();
+  c.testName=val.trim()||'TDIU Online Test';
+  DB.svCfg(c);
+}
+
+function svDeactTime(val){
+  const c=DB.cfg();
+  c.testDeactivateAt=val||null;
+  DB.svCfg(c);
+  rSettings();
+}
+
+function clrDeactTime(){
+  const c=DB.cfg();
+  c.testDeactivateAt=null;
+  DB.svCfg(c);
+  document.getElementById('tdInp').value='';
+  rSettings();
+  toast('✕ Avtomatik deaktiv vaqti tozalandi');
+}
+
+// Convert a JS Date to "YYYY-MM-DDTHH:MM" for datetime-local input
+function toLocalDatetimeStr(date){
+  const pad=n=>String(n).padStart(2,'0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 // ─── LOGIN ID HINT ────────────────────────────────────────────────────────────
 function onIdChange(){
   const id=document.getElementById('fId').value.trim();
   const fh=document.getElementById('studentFoundHint');
   const fth=document.getElementById('firstTimeHint');
   fh.style.display='none'; fth.style.display='none';
-
   if(!id) return;
-
   if(VALID_STUDENTS[id]){
     const stus=DB.students();
     document.getElementById('foundName').textContent=VALID_STUDENTS[id].name;
     fh.style.display='flex';
-    if(!stus[id]||!stus[id].password){
-      fth.style.display='block';
-    }
+    if(!stus[id]||!stus[id].password) fth.style.display='block';
   }
 }
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function doLogin(){
   const id=document.getElementById('fId').value.trim();
-  const pw=document.getElementById('fPass').value.trim(); // BUG#1 FIX: trim()
+  const pw=document.getElementById('fPass').value.trim();
   const err=document.getElementById('lerr');
   err.style.display='none';
-
-  if(!id||!pw){
-    err.textContent='⚠️ HEMIS ID va parolni kiriting!';
-    err.style.display='block'; return;
-  }
-
-  // ── Admin tekshiruvi (SA adminlar ro'yxatida bo'lmaydi — u faqat student) ──
+  if(!id||!pw){err.textContent='⚠️ HEMIS ID va parolni kiriting!';err.style.display='block';return}
   const adms=DB.admins();
   if(adms[id]){
     if(adms[id].password!==pw){err.textContent='❌ Admin paroli noto\'g\'ri!';err.style.display='block';return}
     CU={id,name:adms[id].name,isAdmin:true,isSA:false};
     openAdmin(false); return;
   }
-
-  // ── Student (SA ham shu orqali kiradi — oddiy student kabi) ──
   if(VALID_STUDENTS[id]){
     const info=VALID_STUDENTS[id];
     const stus=DB.students();
-
     if(stus[id]&&stus[id].password){
-      if(stus[id].password!==pw){
-        err.textContent='❌ Parol noto\'g\'ri! Avval o\'rnatgan HEMIS parolingizni kiriting.';
-        err.style.display='block'; return;
-      }
+      if(stus[id].password!==pw){err.textContent='❌ Parol noto\'g\'ri! Avval o\'rnatgan HEMIS parolingizni kiriting.';err.style.display='block';return}
       CU={id,name:stus[id].name,isAdmin:false,isSA:(id===SA_ID)};
     } else {
-      if(pw.length<4){
-        err.textContent='⚠️ Parol kamida 4 ta belgidan iborat bo\'lishi kerak!';
-        err.style.display='block'; return;
-      }
+      if(pw.length<4){err.textContent='⚠️ Parol kamida 4 ta belgidan iborat bo\'lishi kerak!';err.style.display='block';return}
       if(!stus[id]) stus[id]={id,name:info.name,password:'',completed:false,score:0,total:0,ts:null,testHistory:[],resetAll:false,resetByAdmins:[]};
-      stus[id].password=pw;
-      stus[id].name=info.name;
+      stus[id].password=pw;stus[id].name=info.name;
       DB.svStu(stus);
       CU={id,name:info.name,isAdmin:false,isSA:(id===SA_ID)};
     }
     QS=DB.questions();
-    openStudentPanel();
-    return;
+    openStudentPanel();return;
   }
-
   err.textContent='❌ Bunday talaba mavjud emas! HEMIS ID raqamingizni to\'g\'ri kiriting.';
   err.style.display='block';
 }
@@ -750,14 +856,9 @@ function openStudentPanel(){
   show('studentPanel');
   document.getElementById('spName').textContent=CU.name;
   document.getElementById('spId').textContent=CU.id;
-  // Check if completed and can't retest → go to results
-  const stus=DB.students();
-  const s=stus[CU.id];
-  if(s&&s.completed&&!canRet(CU.id)){
-    goSTab('results');
-  } else {
-    goSTab('home');
-  }
+  const stus=DB.students();const s=stus[CU.id];
+  if(s&&s.completed&&!canRet(CU.id)) goSTab('results');
+  else goSTab('home');
 }
 
 function goSTab(tab){
@@ -776,49 +877,47 @@ function goSTab(tab){
 function rSHome(){
   const stus=DB.students();const s=stus[CU.id];
   const history=(s&&s.testHistory)||[];
-  const firstName=CU.name.split(' ')[0]||CU.name;
+  const cfg=DB.cfg();
   const el=document.getElementById('stab-home');
-
   let statsHtml='';
   if(s&&s.completed){
     const p=s.total?Math.round(s.score/s.total*100):0;
-    const pass=p>=56;
-    statsHtml=`
-      <div class="wc-stats">
-        <div class="wcs"><div class="wcs-val">${s.score}/${s.total}</div><div class="wcs-lbl">Oxirgi ball</div></div>
-        <div class="wcs"><div class="wcs-val">${p}%</div><div class="wcs-lbl">Natija</div></div>
-        <div class="wcs"><div class="wcs-val">${history.length}</div><div class="wcs-lbl">Urinish</div></div>
-      </div>`;
+    statsHtml=`<div class="wc-stats">
+      <div class="wcs"><div class="wcs-val">${s.score}/${s.total}</div><div class="wcs-lbl">Oxirgi ball</div></div>
+      <div class="wcs"><div class="wcs-val">${p}%</div><div class="wcs-lbl">Natija</div></div>
+      <div class="wcs"><div class="wcs-val">${history.length}</div><div class="wcs-lbl">Urinish</div></div>
+    </div>`;
   }
-
   let contentHtml='';
+  const active=isTestActive();
   if(s&&s.completed){
     const p=s.total?Math.round(s.score/s.total*100):0;
     const pass=p>=56;
-    contentHtml=`
-      <div class="result-mini ${pass?'':'fail'}">
-        <div class="rm-score">${p}%</div>
-        <div class="rm-label">${pass?'✅ Testdan o\'tdingiz!':'❌ Testdan o\'tolmadingiz'} · Ball: ${s.score}/${s.total}</div>
-        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-sm btn-p" onclick="goSTab('results')">📊 Natijalarni ko'rish</button>
-          ${canRet(CU.id)?`<button class="btn btn-sm btn-g" onclick="goSTab('tests')">▶ Qayta topshirish</button>`:''}
-        </div>
-      </div>`;
+    contentHtml=`<div class="result-mini ${pass?'':'fail'}">
+      <div class="rm-score">${p}%</div>
+      <div class="rm-label">${pass?'✅ Testdan o\'tdingiz!':'❌ Testdan o\'tolmadingiz'} · Ball: ${s.score}/${s.total}</div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-sm btn-p" onclick="goSTab('results')">📊 Natijalarni ko'rish</button>
+        ${canRet(CU.id)&&active?`<button class="btn btn-sm btn-g" onclick="goSTab('tests')">▶ Qayta topshirish</button>`:''}
+      </div>
+    </div>`;
+  } else if(!active){
+    contentHtml=`<div class="test-locked">
+      <div class="test-locked-icon">🔒</div>
+      <div class="test-locked-title">Test hozirda yopiq</div>
+      <div class="test-locked-text">Test admin tomonidan yopilgan.<br>Keyinroq qayta urinib ko'ring.</div>
+    </div>`;
   } else {
     const qs=DB.questions();
-    contentHtml=`
-      <div class="test-card">
-        <div style="text-align:center;padding:20px 10px">
-          <div style="font-size:44px;margin-bottom:12px">📝</div>
-          <div style="font-size:16px;font-weight:800;margin-bottom:6px">Test sizni kutmoqda</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:18px">
-            ${qs.length} ta savol · ${DB.cfg().totalTime} daqiqa
-          </div>
-          <button class="btn btn-g btn-lg" onclick="goSTab('tests')">▶ Testni boshlash</button>
-        </div>
-      </div>`;
+    contentHtml=`<div class="test-card">
+      <div style="text-align:center;padding:20px 10px">
+        <div style="font-size:44px;margin-bottom:12px">📝</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:6px">${cfg.testName||'Test sizni kutmoqda'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:18px">${qs.length} ta savol · ${cfg.totalTime} daqiqa</div>
+        <button class="btn btn-g btn-lg" onclick="goSTab('tests')">▶ Testni boshlash</button>
+      </div>
+    </div>`;
   }
-
   el.innerHTML=`
     <div class="welcome-card">
       <div class="wc-greeting">Xush kelibsiz 👋</div>
@@ -835,42 +934,54 @@ function rSTests(){
   const cfg=DB.cfg();
   const stus=DB.students();
   const s=stus[CU.id];
-  const canTake=!s||!s.completed||canRet(CU.id);
+  const active=isTestActive();
 
-  if(!qs.length){
-    el.innerHTML=`
-      <div class="test-card">
-        <div class="test-no-questions">
-          <div class="test-no-icon">⏳</div>
-          <div style="font-size:15px;font-weight:700;margin-bottom:6px">Hozircha test mavjud emas</div>
-          <div class="test-no-text">Admin test savollarini yuklaganidan keyin bu yerda ko'rinadi.</div>
-        </div>
-      </div>`;
+  // Test yopiq bo'lsa
+  if(!active){
+    el.innerHTML=`<div class="test-locked">
+      <div class="test-locked-icon">🔒</div>
+      <div class="test-locked-title">Test hozirda yopiq</div>
+      <div class="test-locked-text">
+        Test admin tomonidan vaqtincha to'xtatilgan.<br>
+        Keyinroq qayta tekshirib ko'ring yoki adminizga murojaat qiling.
+      </div>
+    </div>`;
     return;
   }
 
-  el.innerHTML=`
-    <div class="test-card">
-      <div class="test-header">
-        <div class="test-title-big">📝 TDIU Online Test</div>
-        <span class="bdg ${canTake?'bb':'bg'}">${canTake?'⏳ Kutilmoqda':'✅ Topshirildi'}</span>
-      </div>
-      <div class="test-meta-row">
-        <span class="test-meta-tag">📋 ${qs.length} ta savol</span>
-        <span class="test-meta-tag">⏱ ${cfg.totalTime} daqiqa</span>
-        <span class="test-meta-tag">📐 Variant ${cfg.variant}</span>
-        <span class="test-meta-tag">🎯 O'tish bali: 56%</span>
-      </div>
-      ${canTake
-        ?`<button class="btn btn-g btn-lg" onclick="startStudentTest()">▶ Testni boshlash</button>`
-        :`<div style="padding:14px;background:#d4f5e9;border-radius:10px;font-size:13px;color:#00695c;font-weight:600">
-            ✅ Test topshirildi. Natijani <button onclick="goSTab('results')" style="background:none;border:none;color:var(--primary);font-weight:700;cursor:pointer;font-size:13px;padding:0;text-decoration:underline">Natijalar</button> bo'limida ko'ring.
-          </div>`
-      }
-    </div>`;
+  if(!qs.length){
+    el.innerHTML=`<div class="test-card"><div class="test-no-questions">
+      <div class="test-no-icon">⏳</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">Hozircha test mavjud emas</div>
+      <div class="test-no-text">Admin test savollarini yuklaganidan keyin bu yerda ko'rinadi.</div>
+    </div></div>`;
+    return;
+  }
+
+  const canTake=!s||!s.completed||canRet(CU.id);
+  el.innerHTML=`<div class="test-card">
+    <div class="test-header">
+      <div class="test-title-big">📝 ${cfg.testName||'TDIU Online Test'}</div>
+      <span class="bdg ${canTake?'bb':'bg'}">${canTake?'⏳ Kutilmoqda':'✅ Topshirildi'}</span>
+    </div>
+    <div class="test-meta-row">
+      <span class="test-meta-tag">📋 ${qs.length} ta savol</span>
+      <span class="test-meta-tag">⏱ ${cfg.totalTime} daqiqa</span>
+      <span class="test-meta-tag">📐 Variant ${cfg.variant}</span>
+      <span class="test-meta-tag">🎯 O'tish bali: 56%</span>
+      ${cfg.testDeactivateAt?`<span class="test-meta-tag">⏰ ${new Date(cfg.testDeactivateAt).toLocaleString('uz-UZ')} gacha</span>`:''}
+    </div>
+    ${canTake
+      ?`<button class="btn btn-g btn-lg" onclick="startStudentTest()">▶ Testni boshlash</button>`
+      :`<div style="padding:14px;background:#d4f5e9;border-radius:10px;font-size:13px;color:#00695c;font-weight:600">
+          ✅ Test topshirildi. Natijani <button onclick="goSTab('results')" style="background:none;border:none;color:var(--primary);font-weight:700;cursor:pointer;font-size:13px;padding:0;text-decoration:underline">Natijalar</button> bo'limida ko'ring.
+        </div>`
+    }
+  </div>`;
 }
 
 function startStudentTest(){
+  if(!isTestActive()){toast('⛔ Test hozirda yopiq');return}
   QS=DB.questions();
   if(!QS.length){toast('⚠️ Savollar yuklanmagan');return}
   ANS={};
@@ -879,64 +990,43 @@ function startStudentTest(){
 
 function rSResults(){
   const el=document.getElementById('stab-results');
-  const stus=DB.students();
-  const s=stus[CU.id];
+  const stus=DB.students();const s=stus[CU.id];
   const history=(s&&s.testHistory)||[];
-
-  // Eski ma'lumotdan ham ko'rsatish (testHistory yo'q bo'lsa lekin completed bo'lsa)
   let allHistory=[...history];
   if(s&&s.completed&&allHistory.length===0){
     allHistory=[{score:s.score||0,total:s.total||0,ts:s.ts,percent:s.total?Math.round((s.score||0)/s.total*100):0,passed:s.total?Math.round((s.score||0)/s.total*100)>=56:false}];
   }
-
   if(!allHistory.length){
-    el.innerHTML=`
-      <div class="history-empty">
-        <div class="history-empty-icon">📊</div>
-        <div style="font-size:15px;font-weight:700;margin-bottom:8px">Hali test topshirilmagan</div>
-        <div class="history-empty-text">Test topshirgandan so'ng natijalaringiz bu yerda ko'rinadi.</div>
-        <button class="btn btn-g" style="margin-top:16px" onclick="goSTab('tests')">📝 Testga o'tish</button>
-      </div>`;
+    el.innerHTML=`<div class="history-empty">
+      <div class="history-empty-icon">📊</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px">Hali test topshirilmagan</div>
+      <div class="history-empty-text">Test topshirgandan so'ng natijalaringiz bu yerda ko'rinadi.</div>
+      <button class="btn btn-g" style="margin-top:16px" onclick="goSTab('tests')">📝 Testga o'tish</button>
+    </div>`;
     return;
   }
-
   const last=allHistory[allHistory.length-1];
   const bestPct=Math.max(...allHistory.map(h=>h.percent));
   const passed=allHistory.filter(h=>h.passed).length;
-
-  el.innerHTML=`
-    <div class="welcome-card" style="background:linear-gradient(135deg,#1a6b4a,#00b894)">
-      <div class="wc-greeting">O'tib ketgan testlar</div>
-      <div class="wc-name">Jami ${allHistory.length} ta urinish</div>
-      <div class="wc-stats">
-        <div class="wcs"><div class="wcs-val">${bestPct}%</div><div class="wcs-lbl">Eng yaxshi</div></div>
-        <div class="wcs"><div class="wcs-val">${last.score}/${last.total}</div><div class="wcs-lbl">Oxirgi</div></div>
-        <div class="wcs"><div class="wcs-val">${passed}/${allHistory.length}</div><div class="wcs-lbl">O'tdi/Jami</div></div>
-      </div>
+  el.innerHTML=`<div class="welcome-card" style="background:linear-gradient(135deg,#1a6b4a,#00b894)">
+    <div class="wc-greeting">O'tib ketgan testlar</div>
+    <div class="wc-name">Jami ${allHistory.length} ta urinish</div>
+    <div class="wc-stats">
+      <div class="wcs"><div class="wcs-val">${bestPct}%</div><div class="wcs-lbl">Eng yaxshi</div></div>
+      <div class="wcs"><div class="wcs-val">${last.score}/${last.total}</div><div class="wcs-lbl">Oxirgi</div></div>
+      <div class="wcs"><div class="wcs-val">${passed}/${allHistory.length}</div><div class="wcs-lbl">O'tdi/Jami</div></div>
     </div>
-    <div class="card">
-      <div class="ctitle">📚 Barcha natijalar</div>
-      <div class="tw">
-        <table class="dt">
-          <thead><tr><th>#</th><th>Sana & Vaqt</th><th>Natija</th><th>Foiz</th><th>Holat</th></tr></thead>
-          <tbody>
-            ${allHistory.slice().reverse().map((h,ri)=>{
-              const i=allHistory.length-ri;
-              const pct=h.percent;
-              const cls=pct>=70?'bg':pct>=56?'bb':'br';
-              const date=h.ts?new Date(h.ts).toLocaleString('uz-UZ'):'—';
-              return `<tr>
-                <td style="font-size:11px;color:var(--muted)">${i}</td>
-                <td style="font-size:11px">${date}</td>
-                <td><b>${h.score}/${h.total}</b></td>
-                <td><span class="bdg ${cls}">${pct}%</span></td>
-                <td><span class="bdg ${h.passed?'bg':'br'}">${h.passed?"✅ O'tdi":"❌ O'tmadi"}</span></td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+  </div>
+  <div class="card">
+    <div class="ctitle">📚 Barcha natijalar</div>
+    <div class="tw"><table class="dt"><thead><tr><th>#</th><th>Sana & Vaqt</th><th>Natija</th><th>Foiz</th><th>Holat</th></tr></thead>
+    <tbody>${allHistory.slice().reverse().map((h,ri)=>{
+      const i=allHistory.length-ri;
+      const pct=h.percent;const cls=pct>=70?'bg':pct>=56?'bb':'br';
+      const date=h.ts?new Date(h.ts).toLocaleString('uz-UZ'):'—';
+      return `<tr><td style="font-size:11px;color:var(--muted)">${i}</td><td style="font-size:11px">${date}</td><td><b>${h.score}/${h.total}</b></td><td><span class="bdg ${cls}">${pct}%</span></td><td><span class="bdg ${h.passed?'bg':'br'}">${h.passed?"✅ O'tdi":"❌ O'tmadi"}</span></td></tr>`;
+    }).join('')}</tbody></table></div>
+  </div>`;
 }
 
 function rSProfile(){
@@ -945,25 +1035,21 @@ function rSProfile(){
   const initials=info.name.split(' ').map(w=>w[0]||'').slice(0,2).join('').toUpperCase();
   const stus=DB.students();const s=stus[CU.id];
   const p=s&&s.total?Math.round(s.score/s.total*100):0;
-  // Faqat super admin uchun kichkina maxfiy tugma
   const saBtn=CU.isSA?`<div style="margin-top:10px"><button onclick="openAdmin(true)" style="background:transparent;border:1px dashed rgba(108,92,231,.3);color:rgba(108,92,231,.45);font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;font-family:inherit;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--purple)';this.style.color='var(--purple)';this.style.borderStyle='solid'" onmouseout="this.style.borderColor='rgba(108,92,231,.3)';this.style.color='rgba(108,92,231,.45)';this.style.borderStyle='dashed'">⚙ admin paneli</button></div>`:'';
-  el.innerHTML=`
-    <div class="profile-card">
-      <div class="profile-avatar">${initials}</div>
-      <div class="profile-name">${info.name}</div>
-      <div class="profile-id">${CU.id}</div>
-      ${saBtn}
-      <div class="profile-grid">
-        <div class="profile-item"><div class="profile-item-label">Kurs</div><div class="profile-item-value">${info.kurs}</div></div>
-        <div class="profile-item"><div class="profile-item-label">Guruh</div><div class="profile-item-value">${info.guruh}</div></div>
-        <div class="profile-item"><div class="profile-item-label">Ta'lim tili</div><div class="profile-item-value">O'zbek</div></div>
-        <div class="profile-item"><div class="profile-item-label">HEMIS ID</div><div class="profile-item-value" style="font-family:'JetBrains Mono',monospace;font-size:11px">${CU.id}</div></div>
-        ${s&&s.completed?`<div class="profile-item"><div class="profile-item-label">Oxirgi ball</div><div class="profile-item-value">${s.score}/${s.total}</div></div><div class="profile-item"><div class="profile-item-label">Natija</div><div class="profile-item-value" style="color:${p>=56?'var(--green)':'var(--red)'}">${p}%</div></div>`:''}
-      </div>
-    </div>`;
+  el.innerHTML=`<div class="profile-card">
+    <div class="profile-avatar">${initials}</div>
+    <div class="profile-name">${info.name}</div>
+    <div class="profile-id">${CU.id}</div>
+    ${saBtn}
+    <div class="profile-grid">
+      <div class="profile-item"><div class="profile-item-label">Kurs</div><div class="profile-item-value">${info.kurs}</div></div>
+      <div class="profile-item"><div class="profile-item-label">Guruh</div><div class="profile-item-value">${info.guruh}</div></div>
+      <div class="profile-item"><div class="profile-item-label">Ta'lim tili</div><div class="profile-item-value">O'zbek</div></div>
+      <div class="profile-item"><div class="profile-item-label">HEMIS ID</div><div class="profile-item-value" style="font-family:'JetBrains Mono',monospace;font-size:11px">${CU.id}</div></div>
+      ${s&&s.completed?`<div class="profile-item"><div class="profile-item-label">Oxirgi ball</div><div class="profile-item-value">${s.score}/${s.total}</div></div><div class="profile-item"><div class="profile-item-label">Natija</div><div class="profile-item-value" style="color:${p>=56?'var(--green)':'var(--red)'}">${p}%</div></div>`:''}
+    </div>
+  </div>`;
 }
-
-function changeStudentPw(){}
 
 // ─── CAN RETEST ───────────────────────────────────────────────────────────────
 function canRet(id){
@@ -974,7 +1060,6 @@ function canRet(id){
 
 // ─── SUPER ADMIN SWITCH ───────────────────────────────────────────────────────
 function saSwitch(){
-  // SA admin paneldan o'z student paneliga o'tadi
   document.getElementById('adminPanel').classList.add('hidden');
   openStudentPanel();
 }
@@ -1009,11 +1094,17 @@ function rStats(){
   const stus=Object.values(DB.students()),qs=DB.questions();
   const done=stus.filter(s=>s.completed);
   const avg=done.length?Math.round(done.reduce((a,b)=>a+(b.score/Math.max(b.total,1)*100),0)/done.length):0;
+  const cfg=DB.cfg();const act=isTestActive();
   document.getElementById('sGrid').innerHTML=`
     <div class="sc sc-b"><div class="si">👥</div><div class="sv">${Object.keys(VALID_STUDENTS).length}</div><div class="sl">Jami talabalar (ro'yxat)</div></div>
     <div class="sc sc-g"><div class="si">🔑</div><div class="sv">${stus.length}</div><div class="sl">Tizimga kirganlar</div></div>
     <div class="sc sc-y"><div class="si">✅</div><div class="sv">${done.length}</div><div class="sl">Test topshirdi</div></div>
-    <div class="sc sc-r"><div class="si">📈</div><div class="sv">${avg}%</div><div class="sl">O'rtacha natija</div></div>`;
+    <div class="sc sc-r"><div class="si">📈</div><div class="sv">${avg}%</div><div class="sl">O'rtacha natija</div></div>
+    <div class="sc" style="background:${act?'linear-gradient(135deg,rgba(0,184,148,.06),rgba(0,184,148,.02))':'linear-gradient(135deg,rgba(214,48,49,.05),rgba(214,48,49,.02))'};border:1px solid ${act?'rgba(0,184,148,.2)':'rgba(214,48,49,.15)'}">
+      <div class="si">${act?'🟢':'🔴'}</div>
+      <div class="sv" style="font-size:18px;color:${act?'var(--green)':'var(--red)'}">${act?'Aktiv':'Deaktiv'}</div>
+      <div class="sl">${cfg.testName||'Test holati'}${cfg.testDeactivateAt&&act?'<br><span style="font-size:10px">⏰ '+new Date(cfg.testDeactivateAt).toLocaleString('uz-UZ')+'</span>':''}</div>
+    </div>`;
   const s=[...done].sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,15);
   document.getElementById('rTbody').innerHTML=s.map(s=>{
     const p=s.total?Math.round(s.score/s.total*100):0;
@@ -1026,11 +1117,8 @@ function rStudents(){
   const q=(document.getElementById('sSrch')?.value||'').toLowerCase();
   const grp=document.getElementById('sGrpF')?.value||'';
   const stus=DB.students();
-
-  // SA: parol ustunini ko'rsatish
   const thPw=document.getElementById('thPw');
   if(thPw) thPw.style.display=CU.isSA?'':'none';
-
   const allIds=Object.keys(VALID_STUDENTS);
   const rows=allIds.filter(id=>{
     if(grp&&VALID_STUDENTS[id].guruh!==grp)return false;
@@ -1041,9 +1129,7 @@ function rStudents(){
     const p=s&&s.total?Math.round(s.score/s.total*100):0;
     const rb=s&&s.resetAll?'<span class="bdg by">♻️ Global</span>':
       (s&&s.resetByAdmins&&s.resetByAdmins.includes(CU.id))?'<span class="bdg bb">🔓 Sizga</span>':'';
-    const pwCell=CU.isSA
-      ?`<td><span class="sa-col">${s&&s.password?s.password:'—'}</span></td>`
-      :'';
+    const pwCell=CU.isSA?`<td><span class="sa-col">${s&&s.password?s.password:'—'}</span></td>`:'';
     return `<tr>
       <td style="font-size:11px;color:var(--muted)">${i+1}</td>
       <td><span class="mono">${id}</span></td>
@@ -1051,12 +1137,7 @@ function rStudents(){
       <td><span class="bdg bgr">${VALID_STUDENTS[id].guruh}</span></td>
       ${pwCell}
       <td>${s&&s.completed?`<div class="sbr"><b style="font-size:11px">${s.score}/${s.total}</b><div class="smb"><div class="${p>=70?'smf':p>=56?'smf m':'smf l'}" style="width:${p}%"></div></div><span style="font-size:10px;color:var(--muted)">${p}%</span></div>`:'—'}</td>
-      <td>
-        ${s?
-          (s.completed?'<span class="bdg bg">✅ Topshirdi</span>':'<span class="bdg bb">🔑 Kirdi</span>'):
-          '<span class="bdg bgr">⏳ Hali kirmadi</span>'
-        } ${rb}
-      </td>
+      <td>${s?(s.completed?'<span class="bdg bg">✅ Topshirdi</span>':'<span class="bdg bb">🔑 Kirdi</span>'):'<span class="bdg bgr">⏳ Hali kirmadi</span>'} ${rb}</td>
       <td style="font-size:11px;color:var(--muted)">${s&&s.ts?new Date(s.ts).toLocaleDateString('uz-UZ'):'—'}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap">
         ${s&&s.completed?`<button class="btn btn-xs btn-y" onclick="doRst('${id}','me')">🔓 Men</button><button class="btn btn-xs btn-ghost" onclick="doRst('${id}','all')">♻️ Hamma</button>`:''}
@@ -1064,7 +1145,6 @@ function rStudents(){
       </div></td>
     </tr>`;
   });
-
   document.getElementById('sTbody').innerHTML=rows.join('')||
     `<tr><td colspan="${CU.isSA?9:8}" style="text-align:center;padding:18px;color:var(--muted)">Talabalar yo\'q</td></tr>`;
 }
@@ -1080,19 +1160,11 @@ function doRst(sid,t){
 function delStu(id){openM("O'chirish",`${id} — barcha ma'lumotlari o'chadi!`,()=>{const s=DB.students();delete s[id];DB.svStu(s);rStudents()})}
 
 function expXls(){
-  const allIds=Object.keys(VALID_STUDENTS);
-  const stus=DB.students();
+  const allIds=Object.keys(VALID_STUDENTS);const stus=DB.students();
   const rows=[['Login ID','Ism Familya','Kurs','Guruh','Ball','Jami','Foiz (%)','Sana','Holat']];
   allIds.forEach(id=>{
-    const s=stus[id];
-    const info=VALID_STUDENTS[id];
-    rows.push([
-      id, info.name, info.kurs, info.guruh,
-      s?s.score:'', s?s.total:'',
-      s&&s.total?Math.round(s.score/s.total*100):'',
-      s&&s.ts?s.ts:'',
-      s?(s.completed?'Topshirdi':s.password?'Kirdi, test topshirmadi':'Hali kirmadi'):'Hali kirmadi'
-    ]);
+    const s=stus[id];const info=VALID_STUDENTS[id];
+    rows.push([id,info.name,info.kurs,info.guruh,s?s.score:'',s?s.total:'',s&&s.total?Math.round(s.score/s.total*100):'',s&&s.ts?s.ts:'',s?(s.completed?'Topshirdi':s.password?'Kirdi, test topshirmadi':'Hali kirmadi'):'Hali kirmadi']);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Talabalar');XLSX.writeFile(wb,'tdiu_talabalar.xlsx');toast('📥 Excel yuklandi');
@@ -1111,13 +1183,7 @@ function rQPrev(){
     <td><span class="bdg bg">${['A','B','C','D'][q.answer]}</span></td></tr>`).join('');
 }
 function dlTpl(){
-  const rows=[
-    ['Savol matni','A varianti','B varianti','C varianti','D varianti',"To'g'ri javob (A/B/C/D)"],
-    ["Inflyatsiya nima?",'Narx pasayishi','Narx ko\'tarilishi','Ish haqi oshishi','Eksport oshishi','B'],
-    ["O'zbekiston poytaxti?",'Samarqand','Buxoro','Toshkent','Namangan','C'],
-    ['2 × 5 = ?','8','9','10','12','C'],
-    ['Savol 4...','A javob','B javob','C javob','D javob','A']
-  ];
+  const rows=[['Savol matni','A varianti','B varianti','C varianti','D varianti',"To'g'ri javob (A/B/C/D)"],["Inflyatsiya nima?",'Narx pasayishi',"Narx ko'tarilishi",'Ish haqi oshishi','Eksport oshishi','B'],["O'zbekiston poytaxti?",'Samarqand','Buxoro','Toshkent','Namangan','C'],['2 × 5 = ?','8','9','10','12','C'],['Savol 4...','A javob','B javob','C javob','D javob','A']];
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:44},{wch:20},{wch:20},{wch:20},{wch:20},{wch:22}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Savollar');XLSX.writeFile(wb,'test_namuna_template.xlsx');toast('📋 Template yuklandi');
 }
@@ -1140,19 +1206,60 @@ function clrQs(){openM('Savollarni tozalash','Barcha savollar o\'chiriladi!',()=
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 function rSettings(){
   const c=DB.cfg();
+  // Variant & time
   document.getElementById('ttInp').value=c.totalTime;
   document.getElementById('qtInp').value=c.timePerQ;
   document.getElementById('vb1').className='vb'+(c.variant===1?' active':'');
   document.getElementById('vb2').className='vb'+(c.variant===2?' active':'');
   document.getElementById('qtRow').style.display=c.variant===2?'':'none';
+
+  // Test name
+  document.getElementById('tnInp').value=c.testName||'TDIU Online Test';
+
+  // Datetime
+  const tdInp=document.getElementById('tdInp');
+  if(c.testDeactivateAt){
+    // Convert stored value to local datetime string
+    try{
+      const d=new Date(c.testDeactivateAt);
+      tdInp.value=isNaN(d)?c.testDeactivateAt:toLocalDatetimeStr(d);
+    }catch{tdInp.value='';}
+  } else {
+    tdInp.value='';
+  }
+
+  // Active toggle button
+  const act=isTestActive(); // re-check (may have auto-deactivated)
+  document.getElementById('taToggle').innerHTML=`
+    <button class="btn btn-sm ${act?'btn-g':'btn-r'}" onclick="toggleTestActive()" style="min-width:130px;justify-content:center">
+      ${act?'🟢 Aktiv — Yopish':'🔴 Deaktiv — Ochish'}
+    </button>`;
+
+  // Status preview
+  let preview='';
+  if(act){
+    const deact=c.testDeactivateAt?new Date(c.testDeactivateAt):null;
+    const deactStr=deact&&!isNaN(deact)?deact.toLocaleString('uz-UZ'):'—';
+    preview=`<div class="test-status-bar active">
+      <div class="status-dot active"></div>
+      <span>Test <b>aktiv</b> — talabalar topshira oladi</span>
+      ${deact&&!isNaN(deact)?`<span style="margin-left:auto;font-size:10px;opacity:.7">⏰ ${deactStr} gacha</span>`:''}
+    </div>`;
+  } else {
+    preview=`<div class="test-status-bar inactive">
+      <div class="status-dot inactive"></div>
+      <span>Test <b>yopiq</b> — talabalar kira olmaydi</span>
+    </div>`;
+  }
+  document.getElementById('statusPreview').innerHTML=preview;
+
+  // Creds
   const adms=DB.admins(),me=adms[CU.id]||{};
   document.getElementById('myCreds').innerHTML=`
     <div class="ci"><div class="cl">Login ID</div><div class="cv">${CU.id}</div></div>
     <div class="ci"><div class="cl">Ism</div><div class="cv">${CU.name}</div></div>
     <div class="ci"><div class="cl">Parol</div><div class="cv cvr">${CU.isSA?'(maxfiy — HEMIS)':me.password||'—'}</div></div>
-    ${CU.isSA?'<div class="ci"><div class="cl">Rol</div><div class="cv" style="color:var(--purple)">⭐ Super Admin (Ghost)</div></div>':''}
-  `;
-  // Reset change form
+    ${CU.isSA?'<div class="ci"><div class="cl">Rol</div><div class="cv" style="color:var(--purple)">⭐ Super Admin (Ghost)</div></div>':''}`;
   ['ccOld','ccNew','ccLogin'].forEach(x=>{const el=document.getElementById(x);if(el)el.value='';});
   ['ccErr','ccOk'].forEach(x=>{const el=document.getElementById(x);if(el)el.style.display='none';});
 }
@@ -1161,42 +1268,24 @@ function changeAdmCreds(){
   const oldPw=document.getElementById('ccOld').value.trim();
   const newPw=document.getElementById('ccNew').value.trim();
   const newLogin=document.getElementById('ccLogin').value.trim();
-  const errEl=document.getElementById('ccErr');
-  const okEl=document.getElementById('ccOk');
+  const errEl=document.getElementById('ccErr');const okEl=document.getElementById('ccOk');
   errEl.style.display='none';okEl.style.display='none';
-
-  // SA — HEMIS paroli o'zgartirib bo'lmaydi
   if(CU.isSA){errEl.textContent='⚠️ Super Admin uchun parol HEMIS tizimida o\'zgartiriladi.';errEl.style.display='block';return}
-
   const adms=DB.admins();
   if(!adms[CU.id]){errEl.textContent='❌ Xatolik: admin topilmadi.';errEl.style.display='block';return}
-
-  // Joriy parol tekshirish
-  if(adms[CU.id].password!==oldPw){
-    errEl.textContent='❌ Joriy parol noto\'g\'ri!';errEl.style.display='block';return;
-  }
-
-  // Login ID o'zgartirish (ixtiyoriy)
+  if(adms[CU.id].password!==oldPw){errEl.textContent='❌ Joriy parol noto\'g\'ri!';errEl.style.display='block';return}
   if(newLogin&&newLogin!==CU.id){
     if(adms[newLogin]){errEl.textContent='⚠️ Bu Login ID allaqachon band!';errEl.style.display='block';return}
     if(newLogin===SA_ID){errEl.textContent='⚠️ Bu ID band!';errEl.style.display='block';return}
-    adms[newLogin]={...adms[CU.id]};
-    delete adms[CU.id];
-    CU.id=newLogin;
+    adms[newLogin]={...adms[CU.id]};delete adms[CU.id];CU.id=newLogin;
     document.getElementById('sbId').textContent=CU.id;
   }
-
-  // Yangi parol
   if(newPw){
     if(newPw.length<4){errEl.textContent='⚠️ Yangi parol kamida 4 ta belgi bo\'lsin!';errEl.style.display='block';return}
     adms[CU.id].password=newPw;
   }
-
-  DB.svAdm(adms);
-  okEl.style.display='block';
-  document.getElementById('ccOld').value='';
-  document.getElementById('ccNew').value='';
-  document.getElementById('ccLogin').value='';
+  DB.svAdm(adms);okEl.style.display='block';
+  document.getElementById('ccOld').value='';document.getElementById('ccNew').value='';document.getElementById('ccLogin').value='';
   rSettings();
 }
 function setV(v){const c=DB.cfg();c.variant=v;DB.svCfg(c);rSettings();toast(`✅ Variant ${v} tanlandi`)}
@@ -1206,17 +1295,14 @@ function resetAll(){openM('Hammani reset','Barcha talabalar qayta topshira oladi
 // ─── ADMINS ───────────────────────────────────────────────────────────────────
 function rAdmins(){
   const adms=DB.admins();
-  // SA ro'yxatga qo'shilmaydi
   document.getElementById('aTbody').innerHTML=Object.entries(adms)
     .filter(([id])=>id!==SA_ID)
-    .map(([id,info])=>`
-    <tr>
+    .map(([id,info])=>`<tr>
       <td><span class="mono">${id}</span></td>
       <td>${info.name}</td>
       <td><input class="apinp" type="text" value="${info.password}" onchange="updAP('${id}',this.value)" title="Parolni tahrirlash"></td>
       <td>${id!==CU.id?`<button class="btn btn-xs btn-r" onclick="rmAdm('${id}')">🗑</button>`:`<span style="font-size:11px;color:var(--muted)">👤 Siz</span>`}</td>
-    </tr>`).join('')||
-    '<tr><td colspan="4" style="text-align:center;padding:18px;color:var(--muted)">Admin yo\'q</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;padding:18px;color:var(--muted)">Admin yo\'q</td></tr>';
 }
 function updAP(id,pw){const a=DB.admins();if(a[id]){a[id].password=pw;DB.svAdm(a);toast('✅ Parol yangilandi')}}
 function addAdm(){
@@ -1232,9 +1318,8 @@ function rmAdm(id){openM("O'chirish",`${id} o'chirilsinmi?`,()=>{const a=DB.admi
 
 // ─── TEST V1 ──────────────────────────────────────────────────────────────────
 function startV1(){
-  show('testV1');const c=DB.cfg();tlM=c.totalTime*60;
-  finished=false; // BUG#2 FIX
-  document.getElementById('v1Name').textContent=CU.name;
+  show('testV1');const c=DB.cfg();tlM=c.totalTime*60;finished=false;
+  document.getElementById('v1Name').textContent=c.testName||CU.name;
   bldV1();updV1P();strtMT('v1T',()=>subV1(true));
 }
 function esc(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
@@ -1256,14 +1341,13 @@ function subV1(auto=false){clearInterval(tM);finTst()}
 
 // ─── TEST V2 ──────────────────────────────────────────────────────────────────
 function startV2(){
-  show('testV2');const c=DB.cfg();tlM=c.totalTime*60;v2i=0;
-  finished=false; // BUG#2 FIX
-  document.getElementById('v2Name').textContent=CU.name;
+  show('testV2');const c=DB.cfg();tlM=c.totalTime*60;v2i=0;finished=false;
+  document.getElementById('v2Name').textContent=c.testName||CU.name;
   rndrV2();strtMT('v2TT',()=>subV2(true));strtQT();
 }
 function rndrV2(){
   const q=QS[v2i];
-  document.getElementById('v2PF').style.width=((v2i+1)/QS.length*100)+'%'; // BUG#4 FIX: +1
+  document.getElementById('v2PF').style.width=((v2i+1)/QS.length*100)+'%';
   document.getElementById('v2PT').textContent=`${v2i+1}/${QS.length}`;
   document.getElementById('v2Prev').style.display=v2i>0?'':'none';
   document.getElementById('v2Next').textContent=v2i===QS.length-1?'✅ Topshirish':'Keyingi →';
@@ -1292,13 +1376,9 @@ function strtMT(elId,onEnd){
     const el=document.getElementById(elId);
     if(el){
       el.textContent=fmt(tlM);
-      // BUG#5 FIX: v2TT is a <span>, not .tmr — update parent .tmr div instead
       if(el.className&&el.className.includes('tmr')){
         el.className='tmr'+(tlM<300?' warn':'')+(tlM<60?' danger':'');
       } else if(elId==='v2TT'){
-        // Umumiy taymer span — yonidagi .tmr div ni range
-        const tmrDiv=document.getElementById('v2QT');
-        // Only show total time danger hint via text color
         el.style.color=tlM<300?'#f39c12':tlM<60?'#d63031':'';
         el.style.fontWeight=tlM<300?'800':'';
       }
@@ -1310,20 +1390,14 @@ function strtMT(elId,onEnd){
 // ─── FINISH TEST ──────────────────────────────────────────────────────────────
 function finTst(){
   const score=QS.reduce((a,q,i)=>a+(ANS[i]===q.answer?1:0),0),total=QS.length;
-
   const stus=DB.students();
   if(!stus[CU.id]) stus[CU.id]={id:CU.id,name:CU.name,password:'',completed:false,score:0,total:0,ts:null,testHistory:[],resetAll:false,resetByAdmins:[]};
   if(!stus[CU.id].testHistory) stus[CU.id].testHistory=[];
-
   const now=new Date().toISOString();
   const pct=total?Math.round(score/total*100):0;
   stus[CU.id].testHistory.push({score,total,ts:now,percent:pct,passed:pct>=56});
-  stus[CU.id].completed=true;
-  stus[CU.id].score=score;
-  stus[CU.id].total=total;
-  stus[CU.id].ts=now;
-  stus[CU.id].resetAll=false;
-  stus[CU.id].resetByAdmins=[];
+  stus[CU.id].completed=true;stus[CU.id].score=score;stus[CU.id].total=total;stus[CU.id].ts=now;
+  stus[CU.id].resetAll=false;stus[CU.id].resetByAdmins=[];
   DB.svStu(stus);
   shwRes(score,total,false);
 }
@@ -1341,23 +1415,16 @@ function shwRes(score,total,preview=false){
     rdI('Ball',`${score}/${total}`)+rdI('Foiz',`${p}%`)+
     rdI('Holat',pass?'✅ O\'tdi':'❌ O\'tmadi')+
     rdI('Vaqt',new Date().toLocaleTimeString('uz-UZ'));
-
-  const actions=document.getElementById('rActions');
-  actions.innerHTML='';
-  const b=document.createElement('button');
-  b.className='btn btn-p';
-  b.textContent='📊 Natijalarimni ko\'rish';
-  b.onclick=()=>{openStudentPanel();goSTab('results')};
-  actions.appendChild(b);
+  const actions=document.getElementById('rActions');actions.innerHTML='';
+  const b=document.createElement('button');b.className='btn btn-p';b.textContent='📊 Natijalarimni ko\'rish';
+  b.onclick=()=>{openStudentPanel();goSTab('results')};actions.appendChild(b);
 }
-
 function rdI(l,v){return `<div class="rdi"><div class="rdl">${l}</div><div class="rdv">${v}</div></div>`}
 
 // ─── LOGOUT ───────────────────────────────────────────────────────────────────
 function doLogout(){
   CU=null;QS=[];ANS={};v2i=0;clearInterval(tM);clearInterval(tQ);
-  document.getElementById('fId').value='';
-  document.getElementById('fPass').value='';
+  document.getElementById('fId').value='';document.getElementById('fPass').value='';
   document.getElementById('lerr').style.display='none';
   document.getElementById('studentFoundHint').style.display='none';
   document.getElementById('firstTimeHint').style.display='none';
