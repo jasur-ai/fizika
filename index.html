@@ -11,13 +11,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDemo-ReplaceWithYours",
-  authDomain: "tdiu-test.firebaseapp.com",
-  databaseURL: "https://tdiu-test-default-rtdb.firebaseio.com",
-  projectId: "tdiu-test",
-  storageBucket: "tdiu-test.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000"
+  apiKey: "AIzaSyDKmtTvyJ3OYzOTNqdrJ44UElSTUSLGS7Q",
+  authDomain: "fizika-50ce6.firebaseapp.com",
+  databaseURL: "https://fizika-50ce6-default-rtdb.firebaseio.com",
+  projectId: "fizika-50ce6",
+  storageBucket: "fizika-50ce6.firebasestorage.app",
+  messagingSenderId: "112022177883",
+  appId: "1:112022177883:web:8cbaad7884a3f5f02dd77e",
+  measurementId: "G-BEMHSZ5332"
 };
 window._fbApp = initializeApp(firebaseConfig);
 window._fbDB = getDatabase(window._fbApp);
@@ -805,32 +806,64 @@ const DB={
 };
 
 // Real-time listeners
-let _rtInterval=null;
+let _rtInterval=null,_fbListeners=[];
 function startRT(){
-  if(_rtInterval)return;
-  // Firebase realtime listener — students va cfg
+  if(_fbListeners.length>0)return; // allaqachon ishga tushirilgan
   if(window._fbReady){
-    ['stus','cfg'].forEach(k=>{
-      window._fbOnValue(window._fbRef(window._fbDB,'tdiu/'+k),(snap)=>{
+    // stus, cfg, qs — hammasi listen qilinadi
+    ['stus','cfg','qs'].forEach(k=>{
+      const unsub=window._fbOnValue(window._fbRef(window._fbDB,'tdiu/'+k),(snap)=>{
         if(snap.exists()){DB._lset(k,snap.val())}
+        // ── Admin panel yangilanishi ──
         const ap=document.getElementById('adminPanel');
         if(ap&&!ap.classList.contains('hidden')){
           const at=document.querySelector('.tp.active');
           if(at){if(at.id==='tab-stats')rStats();else if(at.id==='tab-students')rStudents();}
         }
+        // ── Student panel yangilanishi ──
+        const sp=document.getElementById('studentPanel');
+        if(sp&&!sp.classList.contains('hidden')&&CU){
+          // stus o'zgarganda: natija holati, canRet, home/results tab
+          if(k==='stus'){
+            QS=DB.questions(); // refresh questions too
+            const activeTab=document.querySelector('.stab:not(.hidden)');
+            if(activeTab){
+              if(activeTab.id==='stab-home')rSHome();
+              else if(activeTab.id==='stab-tests')rSTests();
+              else if(activeTab.id==='stab-results')rSResults();
+            }
+          }
+          // cfg yoki qs o'zgarganda: test holati yangilansin
+          if(k==='cfg'||k==='qs'){
+            QS=DB.questions();
+            const activeTab=document.querySelector('.stab:not(.hidden)');
+            if(activeTab){
+              if(activeTab.id==='stab-home')rSHome();
+              else if(activeTab.id==='stab-tests')rSTests();
+            }
+          }
+        }
       });
+      _fbListeners.push(unsub);
     });
   }
-  // Fallback polling
-  _rtInterval=setInterval(()=>{
-    const ap=document.getElementById('adminPanel');
-    if(ap&&!ap.classList.contains('hidden')){
-      const at=document.querySelector('.tp.active');
-      if(at){if(at.id==='tab-stats')rStats();else if(at.id==='tab-students')rStudents();}
-    }
-  },5000);
+  // Fallback polling (Firebase ishlamasa)
+  if(!window._fbReady){
+    _rtInterval=setInterval(()=>{
+      const ap=document.getElementById('adminPanel');
+      if(ap&&!ap.classList.contains('hidden')){
+        const at=document.querySelector('.tp.active');
+        if(at){if(at.id==='tab-stats')rStats();else if(at.id==='tab-students')rStudents();}
+      }
+    },5000);
+  }
 }
-function stopRT(){if(_rtInterval){clearInterval(_rtInterval);_rtInterval=null}}
+function stopRT(){
+  // Firebase unsubscribe
+  _fbListeners.forEach(fn=>{try{fn()}catch{}});
+  _fbListeners=[];
+  if(_rtInterval){clearInterval(_rtInterval);_rtInterval=null}
+}
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let CU=null,QS=[],ANS={},v2i=0,tM=null,tQ=null,tlM=0,tlQ=0,finished=false;
@@ -920,6 +953,7 @@ function doLogin(){
 // ─── STUDENT PANEL ────────────────────────────────────────────────────────────
 function openStudentPanel(){
   show('studentPanel');
+  startRT(); // ← real-time yangilanishni yoq
   document.getElementById('spName').textContent=CU.name;
   document.getElementById('spId').textContent=CU.id;
   const stus=DB.students();
@@ -1620,6 +1654,9 @@ function doLogout(){
   if(window._fbReady){
     try{await DB.syncFromFB()}catch(e){}
   }
+  // Login sahifasini ko'rsat va RT listenerlarni ham boshlat
+  // (talabalar login qilganda ham savollar/cfg yangi bo'lsin)
+  startRT();
   document.getElementById('loginPage').classList.remove('hidden');
 })();
 
