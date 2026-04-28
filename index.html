@@ -5,6 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TDIU — Online Test Tizimi</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+// ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDemo-ReplaceWithYours",
+  authDomain: "tdiu-test.firebaseapp.com",
+  databaseURL: "https://tdiu-test-default-rtdb.firebaseio.com",
+  projectId: "tdiu-test",
+  storageBucket: "tdiu-test.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:0000000000000000"
+};
+window._fbApp = initializeApp(firebaseConfig);
+window._fbDB = getDatabase(window._fbApp);
+window._fbRef = ref;
+window._fbSet = set;
+window._fbGet = get;
+window._fbOnValue = onValue;
+window._fbReady = true;
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -736,11 +758,29 @@ const SAMPLE_QS=[
   }
 })();
 
-// ─── DB (localStorage — barcha brauzer va hosting uchun) ────────────────────
+// ─── DB (Firebase realtime + localStorage fallback) ──────────────────────────
 const DB={
   _k:k=>'tq7_'+k,
-  get(k){try{return JSON.parse(localStorage.getItem(this._k(k)))}catch{return null}},
-  set(k,v){localStorage.setItem(this._k(k),JSON.stringify(v));showSaved()},
+  // localStorage (har doim)
+  _lget(k){try{return JSON.parse(localStorage.getItem(this._k(k)))}catch{return null}},
+  _lset(k,v){try{localStorage.setItem(this._k(k),JSON.stringify(v))}catch{}},
+  // Firebase async set
+  async _fset(k,v){
+    if(!window._fbReady)return;
+    try{await window._fbSet(window._fbRef(window._fbDB,'tdiu/'+k),v)}catch(e){}
+  },
+  // Firebase async get
+  async _fget(k){
+    if(!window._fbReady)return null;
+    try{
+      const snap=await window._fbGet(window._fbRef(window._fbDB,'tdiu/'+k));
+      return snap.exists()?snap.val():null;
+    }catch{return null}
+  },
+  // Sync get (cache → localStorage)
+  get(k){return this._lget(k)},
+  // Set: localStorage + Firebase
+  set(k,v){this._lset(k,v);this._fset(k,v);showSaved()},
   cfg(){return this.get('cfg')||{variant:1,totalTime:40,timePerQ:2,testActive:false}},
   admins(){
     let a=this.get('adms');if(a)return a;
@@ -752,11 +792,45 @@ const DB={
   svStu(s){this.set('stus',s)},
   svCfg(c){this.set('cfg',c)},
   svAdm(a){this.set('adms',a)},
-  svQs(q){this.set('qs',q)}
+  svQs(q){this.set('qs',q)},
+  // Pull latest from Firebase → localStorage cache
+  async syncFromFB(){
+    if(!window._fbReady)return;
+    const keys=['cfg','adms','qs','stus'];
+    await Promise.all(keys.map(async k=>{
+      const v=await this._fget(k);
+      if(v!=null)this._lset(k,v);
+    }));
+  }
 };
+
+// Real-time listeners
 let _rtInterval=null;
-function startRT(){}
-function stopRT(){}
+function startRT(){
+  if(_rtInterval)return;
+  // Firebase realtime listener — students va cfg
+  if(window._fbReady){
+    ['stus','cfg'].forEach(k=>{
+      window._fbOnValue(window._fbRef(window._fbDB,'tdiu/'+k),(snap)=>{
+        if(snap.exists()){DB._lset(k,snap.val())}
+        const ap=document.getElementById('adminPanel');
+        if(ap&&!ap.classList.contains('hidden')){
+          const at=document.querySelector('.tp.active');
+          if(at){if(at.id==='tab-stats')rStats();else if(at.id==='tab-students')rStudents();}
+        }
+      });
+    });
+  }
+  // Fallback polling
+  _rtInterval=setInterval(()=>{
+    const ap=document.getElementById('adminPanel');
+    if(ap&&!ap.classList.contains('hidden')){
+      const at=document.querySelector('.tp.active');
+      if(at){if(at.id==='tab-stats')rStats();else if(at.id==='tab-students')rStudents();}
+    }
+  },5000);
+}
+function stopRT(){if(_rtInterval){clearInterval(_rtInterval);_rtInterval=null}}
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let CU=null,QS=[],ANS={},v2i=0,tM=null,tQ=null,tlM=0,tlQ=0,finished=false;
@@ -1237,7 +1311,6 @@ function renderActivateCard(){
         <div class="tac-sub">
           ${active
             ?`${qs.length} ta savol · ${cfg.totalTime} daqiqa · Variant ${cfg.variant} — Talabalar hozir test topa oladi`
-            ?`${qs.length} ta savol yuklangan. Testni boshlash uchun yashil tugmani bosing.`
             :`${qs.length} ta savol yuklangan. Testni boshlash uchun yashil tugmani bosing.`
           }
         </div>
@@ -1542,7 +1615,13 @@ function doLogout(){
 }
 
 // ─── APP INIT ─────────────────────────────────────────────────────────────────
-document.getElementById('loginPage').classList.remove('hidden');
+(async function initApp(){
+  // Sync from Firebase if available
+  if(window._fbReady){
+    try{await DB.syncFromFB()}catch(e){}
+  }
+  document.getElementById('loginPage').classList.remove('hidden');
+})();
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
