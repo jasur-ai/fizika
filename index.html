@@ -736,64 +736,27 @@ const SAMPLE_QS=[
   }
 })();
 
-// ─── DB (shared storage — barcha brauzerlar uchun) ───────────────────────────
+// ─── DB (localStorage — barcha brauzer va hosting uchun) ────────────────────
 const DB={
-  _cache:{},
-  async _get(k){
-    try{
-      const r=await window.storage.get('tq7_'+k,true);
-      if(r&&r.value!=null){const v=JSON.parse(r.value);this._cache[k]=v;return v}
-    }catch(e){}
-    return this._cache[k]||null;
+  _k:k=>'tq7_'+k,
+  get(k){try{return JSON.parse(localStorage.getItem(this._k(k)))}catch{return null}},
+  set(k,v){localStorage.setItem(this._k(k),JSON.stringify(v));showSaved()},
+  cfg(){return this.get('cfg')||{variant:1,totalTime:40,timePerQ:2,testActive:false}},
+  admins(){
+    let a=this.get('adms');if(a)return a;
+    a={'TDIU_ADMIN_001':{name:'Bosh Admin',password:'admin123'},'TDIU_ADMIN_002':{name:'Admin 2',password:'admin123'}};
+    this.set('adms',a);return a;
   },
-  async _set(k,v){
-    this._cache[k]=v;
-    try{await window.storage.set('tq7_'+k,JSON.stringify(v),true)}catch(e){}
-    showSaved();
-  },
-  // Sync versions (from cache) for UI rendering
-  _getSync(k){return this._cache[k]||null},
-  cfg(){return this._getSync('cfg')||{variant:1,totalTime:40,timePerQ:2,testActive:false}},
-  admins(){return this._getSync('adms')||{'TDIU_ADMIN_001':{name:'Bosh Admin',password:'admin123'},'TDIU_ADMIN_002':{name:'Admin 2',password:'admin123'}}},
-  questions(){const q=this._getSync('qs');return(q&&q.length)?q:SAMPLE_QS},
-  students(){return this._getSync('stus')||{}},
-  svStu(s){this._set('stus',s)},
-  svCfg(c){this._set('cfg',c)},
-  svAdm(a){this._set('adms',a)},
-  svQs(q){this._set('qs',q)},
-  // Load all from storage into cache
-  async loadAll(){
-    await Promise.all(['cfg','adms','qs','stus'].map(k=>this._get(k)));
-    // Init defaults if empty
-    if(!this._getSync('adms'))await this._set('adms',{'TDIU_ADMIN_001':{name:'Bosh Admin',password:'admin123'},'TDIU_ADMIN_002':{name:'Admin 2',password:'admin123'}});
-    if(!this._getSync('cfg'))await this._set('cfg',{variant:1,totalTime:40,timePerQ:2,testActive:false});
-    if(!this._getSync('qs'))await this._set('qs',SAMPLE_QS);
-    if(!this._getSync('stus'))await this._set('stus',{});
-  },
-  // Partial refresh — faqat students va cfg ni yangilash (real-time uchun)
-  async refreshRT(){
-    await Promise.all(['stus','cfg'].map(k=>this._get(k)));
-  }
+  questions(){const q=this.get('qs');if(q&&q.length)return q;this.set('qs',SAMPLE_QS);return SAMPLE_QS},
+  students(){return this.get('stus')||{}},
+  svStu(s){this.set('stus',s)},
+  svCfg(c){this.set('cfg',c)},
+  svAdm(a){this.set('adms',a)},
+  svQs(q){this.set('qs',q)}
 };
-
-// Real-time polling — admin panelda har 3 soniyada yangilash
 let _rtInterval=null;
-function startRT(){
-  if(_rtInterval)return;
-  _rtInterval=setInterval(async()=>{
-    await DB.refreshRT();
-    // Faqat admin panel ochiq bo'lsa yangilansin
-    const ap=document.getElementById('adminPanel');
-    if(ap&&!ap.classList.contains('hidden')){
-      const activTab=document.querySelector('.tp.active');
-      if(activTab){
-        if(activTab.id==='tab-stats')rStats();
-        else if(activTab.id==='tab-students')rStudents();
-      }
-    }
-  },3000);
-}
-function stopRT(){if(_rtInterval){clearInterval(_rtInterval);_rtInterval=null}}
+function startRT(){}
+function stopRT(){}
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let CU=null,QS=[],ANS={},v2i=0,tM=null,tQ=null,tlM=0,tlQ=0,finished=false;
@@ -891,20 +854,6 @@ function openStudentPanel(){
     goSTab('results');
   } else {
     goSTab('home');
-  }
-  // Student uchun test holati yangilanishi (har 5 soniyada)
-  if(!_rtInterval){
-    _rtInterval=setInterval(async()=>{
-      const ap=document.getElementById('adminPanel');
-      if(!ap||ap.classList.contains('hidden')){
-        await DB.refreshRT();
-        // Faqat tests yoki home tabda bo'lsa yangilansin
-        const homeTab=document.getElementById('stab-home');
-        const testTab=document.getElementById('stab-tests');
-        if(homeTab&&!homeTab.classList.contains('hidden'))rSHome();
-        if(testTab&&!testTab.classList.contains('hidden'))rSTests();
-      }
-    },5000);
   }
 }
 
@@ -1593,22 +1542,7 @@ function doLogout(){
 }
 
 // ─── APP INIT ─────────────────────────────────────────────────────────────────
-(async function initApp(){
-  // Show loading overlay
-  const overlay=document.createElement('div');
-  overlay.id='loadOverlay';
-  overlay.style.cssText='position:fixed;inset:0;background:#0c2461;display:flex;align-items:center;justify-content:center;z-index:99999;flex-direction:column;gap:14px';
-  overlay.innerHTML='<div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#f9ca24;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.7);font-size:13px;font-family:inherit">Tizim yuklanmoqda...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-  document.body.appendChild(overlay);
-
-  if(window.storage){
-    await DB.loadAll();
-  }
-
-  overlay.remove();
-  // Show login page
-  document.getElementById('loginPage').classList.remove('hidden');
-})();
+document.getElementById('loginPage').classList.remove('hidden');
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
