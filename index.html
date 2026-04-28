@@ -1609,6 +1609,8 @@ function doLogout(){
   // Show login page
   document.getElementById('loginPage').classList.remove('hidden');
 })();
+
+document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     if(!document.getElementById('loginPage').classList.contains('hidden')){doLogin();return}
     if(!document.getElementById('testV2').classList.contains('hidden')){v2n();return}
