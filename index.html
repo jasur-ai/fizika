@@ -1075,14 +1075,15 @@ function rSTests(){
   el.innerHTML=`
     <div class="test-card">
       <div class="test-header">
-        <div class="test-title-big">📝 TDIU Online Test</div>
+        <div class="test-title-big">📝 ${cfg.testName||'TDIU Online Test'}</div>
         <span class="bdg ${canTake?'bb':'bg'}">${canTake?'⏳ Kutilmoqda':'✅ Topshirildi'}</span>
       </div>
       <div class="test-meta-row">
+        ${cfg.testSubject?`<span class="test-meta-tag">📚 ${cfg.testSubject}</span>`:''}
         <span class="test-meta-tag">📋 ${qs.length} ta savol</span>
         <span class="test-meta-tag">⏱ ${cfg.totalTime} daqiqa</span>
         <span class="test-meta-tag">📐 Variant ${cfg.variant}</span>
-        <span class="test-meta-tag">🎯 O'tish bali: 56%</span>
+        <span class="test-meta-tag">🎯 O'tish bali: ${cfg.passPct||56}%</span>
       </div>
       ${canTake
         ?`<button class="btn btn-g btn-lg" onclick="startStudentTest()">▶ Testni boshlash</button>`
@@ -1412,9 +1413,94 @@ function rdXl(file){
       const data=XLSX.utils.sheet_to_json(ws,{header:1}),mp={'A':0,'B':1,'C':2,'D':3},qs=[];
       for(let i=1;i<data.length;i++){const row=data[i];if(!row[0]||!row[5])continue;qs.push({question:String(row[0]).trim(),options:[String(row[1]||'').trim(),String(row[2]||'').trim(),String(row[3]||'').trim(),String(row[4]||'').trim()],answer:mp[String(row[5]).trim().toUpperCase()]??0})}
       if(!qs.length){toast('⚠️ Savollar topilmadi');return}
-      DB.svQs(qs);rQPrev();toast(`✅ ${qs.length} ta savol yuklandi — endi testni faollashtiring!`);
+      // Savollar tayyor — endi test ma'lumotlarini so'raymiz
+      showTestInfoModal(qs);
     }catch{toast('❌ Fayl o\'qishda xatolik')}
   };r.readAsArrayBuffer(file);
+}
+
+function showTestInfoModal(qs){
+  const cfg=DB.cfg();
+  const overlay=document.createElement('div');
+  overlay.id='testInfoOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fUp .2s ease';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:20px;padding:28px 32px;width:460px;max-width:95vw;box-shadow:0 32px 80px rgba(0,0,0,.35)">
+      <div style="font-size:18px;font-weight:800;color:var(--primary);margin-bottom:4px">📋 Test ma'lumotlari</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:22px">${qs.length} ta savol yuklandi — quyidagi ma'lumotlarni to'ldiring</div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px;margin-bottom:6px">
+            Test nomi <span style="color:var(--red)">*</span>
+          </label>
+          <input id="tiName" type="text" placeholder="Masalan: Iqtisodiyot asoslari — 1-oraliq" maxlength="80"
+            value="${cfg.testName||''}"
+            style="width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:11px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px;margin-bottom:6px">
+            Fan nomi
+            <span style="font-size:10px;font-weight:500;color:var(--muted);text-transform:none">(ixtiyoriy)</span>
+          </label>
+          <input id="tiSubject" type="text" placeholder="Masalan: Mikroiqtisodiyot" maxlength="60"
+            value="${cfg.testSubject||''}"
+            style="width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:11px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px;margin-bottom:6px">
+            O'tish bali (%)
+          </label>
+          <input id="tiPassPct" type="number" min="1" max="100" placeholder="56"
+            value="${cfg.passPct||56}"
+            style="width:120px;padding:11px 14px;border:2px solid var(--border);border-radius:11px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border-radius:11px">
+          <div style="font-size:22px">📊</div>
+          <div>
+            <div style="font-size:12px;font-weight:700">${qs.length} ta savol yuklandi</div>
+            <div style="font-size:11px;color:var(--muted)">Excel fayl muvaffaqiyatli o'qildi</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tiErr" style="font-size:11px;color:var(--red);margin-top:10px;display:none"></div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+        <button onclick="document.getElementById('testInfoOverlay').remove()"
+          style="padding:10px 18px;background:rgba(0,0,0,.06);border:none;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">
+          Bekor qilish
+        </button>
+        <button onclick="saveTestInfo(${JSON.stringify(qs).replace(/"/g,'&quot;')})" id="tiSaveBtn"
+          style="padding:10px 22px;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px">
+          💾 Saqlash
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('tiName')?.focus(),100);
+}
+
+function saveTestInfo(qs){
+  const name=(document.getElementById('tiName')?.value||'').trim();
+  const subject=(document.getElementById('tiSubject')?.value||'').trim();
+  const passPct=parseInt(document.getElementById('tiPassPct')?.value)||56;
+  const errEl=document.getElementById('tiErr');
+  if(!name){errEl.textContent='⚠️ Test nomini kiriting!';errEl.style.display='block';document.getElementById('tiName').focus();return}
+  errEl.style.display='none';
+  // Cfg ga test nomini saqlash
+  const cfg=DB.cfg();
+  cfg.testName=name;
+  cfg.testSubject=subject;
+  cfg.passPct=Math.min(100,Math.max(1,passPct));
+  DB.svCfg(cfg);
+  DB.svQs(qs);
+  document.getElementById('testInfoOverlay')?.remove();
+  rQPrev();
+  toast(`✅ "${name}" — ${qs.length} ta savol saqlandi!`);
 }
 function clrQs(){openM('Savollarni tozalash','Barcha savollar o\'chiriladi va test to\'xtatiladi!',()=>{
   const cfg=DB.cfg();cfg.testActive=false;DB.svCfg(cfg);
@@ -1517,7 +1603,7 @@ function rmAdm(id){openM("O'chirish",`${id} o'chirilsinmi?`,()=>{const a=DB.admi
 function startV1(){
   show('testV1');const c=DB.cfg();tlM=c.totalTime*60;
   finished=false; // BUG#2 FIX
-  document.getElementById('v1Name').textContent=CU.name;
+  document.getElementById('v1Name').textContent=c.testName?`${c.testName}${c.testSubject?' · '+c.testSubject:''}`:CU.name;
   bldV1();updV1P();strtMT('v1T',()=>subV1(true));
 }
 function esc(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
@@ -1541,7 +1627,7 @@ function subV1(auto=false){clearInterval(tM);finTst()}
 function startV2(){
   show('testV2');const c=DB.cfg();tlM=c.totalTime*60;v2i=0;
   finished=false; // BUG#2 FIX
-  document.getElementById('v2Name').textContent=CU.name;
+  document.getElementById('v2Name').textContent=c.testName?`${c.testName}${c.testSubject?' · '+c.testSubject:''}`:CU.name;
   rndrV2();strtMT('v2TT',()=>subV2(true));strtQT();
 }
 function rndrV2(){
@@ -1593,6 +1679,8 @@ function strtMT(elId,onEnd){
 // ─── FINISH TEST ──────────────────────────────────────────────────────────────
 function finTst(){
   const score=QS.reduce((a,q,i)=>a+(ANS[i]===q.answer?1:0),0),total=QS.length;
+  const cfg=DB.cfg();
+  const passPct=cfg.passPct||56;
 
   const stus=DB.students();
   if(!stus[CU.id]) stus[CU.id]={id:CU.id,name:CU.name,password:'',completed:false,score:0,total:0,ts:null,testHistory:[],resetAll:false,resetByAdmins:[]};
@@ -1600,7 +1688,7 @@ function finTst(){
 
   const now=new Date().toISOString();
   const pct=total?Math.round(score/total*100):0;
-  stus[CU.id].testHistory.push({score,total,ts:now,percent:pct,passed:pct>=56});
+  stus[CU.id].testHistory.push({score,total,ts:now,percent:pct,passed:pct>=passPct,testName:cfg.testName||''});
   stus[CU.id].completed=true;
   stus[CU.id].score=score;
   stus[CU.id].total=total;
@@ -1608,18 +1696,19 @@ function finTst(){
   stus[CU.id].resetAll=false;
   stus[CU.id].resetByAdmins=[];
   DB.svStu(stus);
-  shwRes(score,total,false);
+  shwRes(score,total,passPct,cfg.testName||'');
 }
 
-function shwRes(score,total,preview=false){
+function shwRes(score,total,passPct=56,testName=''){
   show('resultPage');
-  const p=total?Math.round(score/total*100):0,pass=p>=56;
+  const p=total?Math.round(score/total*100):0,pass=p>=passPct;
   document.getElementById('rR').style.cssText=`--rp:${p}%;--rc:${pass?'#00b894':'#d63031'}`;
   document.getElementById('rSc').textContent=score;
   document.getElementById('rOf').textContent=`/ ${total}`;
   document.getElementById('rTt').textContent=pass?'🎉 Tabriklaymiz!':'😔 Afsuski...';
-  document.getElementById('rSb').textContent=pass?`Testdan muvaffaqiyatli o'tdingiz! Natija: ${p}%`:`Natijangiz: ${p}% — O'tish bali 56%`;
+  document.getElementById('rSb').textContent=pass?`Testdan muvaffaqiyatli o'tdingiz! Natija: ${p}%`:`Natijangiz: ${p}% — O'tish bali ${passPct}%`;
   document.getElementById('rG').innerHTML=
+    (testName?rdI('Test',testName):'')+
     rdI('Ism Familya',CU.name)+rdI('Login ID',CU.id)+
     rdI('Ball',`${score}/${total}`)+rdI('Foiz',`${p}%`)+
     rdI('Holat',pass?'✅ O\'tdi':'❌ O\'tmadi')+
