@@ -1728,21 +1728,95 @@ function doLogout(){
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+// ─── SESSION (refresh'da saqlanadi, browser yopilganda o'chadi) ───────────────
+const _SK='tdiu_s1';
+function _ssave(){
+  if(!CU)return;
+  try{
+    const pages=['loginPage','studentPanel','testV1','testV2','resultPage','adminPanel'];
+    let view='studentPanel';
+    for(const p of pages){if(!document.getElementById(p).classList.contains('hidden')){view=p;break}}
+    const d={cu:CU,view,ts:Date.now()};
+    if(view==='studentPanel'){const a=document.querySelector('.sp-nav-btn.active');d.stab=a?a.id.replace('snav-',''):'home'}
+    if(view==='adminPanel'){const a=document.querySelector('.tp.active');d.atab=a?a.id.replace('tab-',''):'stats'}
+    if(view==='testV1'||view==='testV2')d.ts_test={qs:QS,ans:ANS,at:ACTIVE_TEST,view,v2i,tlM,tlQ};
+    if(view==='resultPage'){d.view='studentPanel';d.stab='results'}
+    sessionStorage.setItem(_SK,JSON.stringify(d));
+  }catch{}
+}
+function _sclear(){try{sessionStorage.removeItem(_SK)}catch{}}
+
+// Asl doLogout ni override qilamiz
+const _origDoLogout=doLogout;
+function doLogout(){_sclear();_origDoLogout();}
+
+// Auto-save
+setInterval(_ssave,4000);
+document.addEventListener('visibilitychange',_ssave);
+// ─── SESSION ──────────────────────────────────────────────────────────────────
+const _SK='tdiu_s1';
+function _ssave(){
+  if(!CU)return;
+  try{
+    const pages=['loginPage','studentPanel','testV1','testV2','resultPage','adminPanel'];
+    let view='studentPanel';
+    for(const p of pages){if(!document.getElementById(p).classList.contains('hidden')){view=p;break}}
+    const d={cu:CU,view,ts:Date.now()};
+    if(view==='studentPanel'){const a=document.querySelector('.sp-nav-btn.active');d.stab=a?a.id.replace('snav-',''):'home'}
+    if(view==='adminPanel'){const a=document.querySelector('.tp.active');d.atab=a?a.id.replace('tab-',''):'stats'}
+    if(view==='testV1'||view==='testV2')d.ts_test={qs:QS,ans:ANS,at:ACTIVE_TEST,view,v2i,tlM,tlQ};
+    if(view==='resultPage'){d.view='studentPanel';d.stab='results'}
+    sessionStorage.setItem(_SK,JSON.stringify(d));
+  }catch{}
+}
+function _sclear(){try{sessionStorage.removeItem(_SK)}catch{}}
+const _origDoLogout=doLogout;
+function doLogout(){_sclear();_origDoLogout();}
+setInterval(_ssave,4000);
+document.addEventListener('visibilitychange',_ssave);
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 (async function initApp(){
   migrateOldFormat();
-  document.getElementById('loginPage').classList.remove('hidden');
   const waitFB=new Promise(res=>{
     if(window._fbReady){res();return}
     const chk=setInterval(()=>{if(window._fbReady){clearInterval(chk);res()}},30);
     setTimeout(()=>{clearInterval(chk);res()},4000);
   });
+  try{
+    const raw=sessionStorage.getItem(_SK);
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d&&d.cu&&(Date.now()-(d.ts||0))<28800000){
+        CU=d.cu;
+        await waitFB;
+        try{await DB.syncFromFB()}catch{}
+        startRT();
+        if(d.ts_test&&(d.view==='testV1'||d.view==='testV2')){
+          const ts=d.ts_test;
+          QS=ts.qs||[];ANS=ts.ans||{};ACTIVE_TEST=ts.at;v2i=ts.v2i||0;
+          tlM=ts.tlM||ACTIVE_TEST.totalTime*60;
+          if(ts.view==='testV2'){startV2();}else{startV1();}
+          return;
+        }
+        if(d.view==='adminPanel'){
+          openAdmin(d.cu.isSA||false);
+          if(d.atab)setTimeout(()=>{const n=document.getElementById('nav-'+d.atab);if(n)goTab(d.atab,n)},300);
+        }else{
+          openStudentPanel();
+          if(d.stab)setTimeout(()=>goSTab(d.stab),200);
+        }
+        return;
+      }
+    }
+  }catch(e){_sclear();}
+  document.getElementById('loginPage').classList.remove('hidden');
   waitFB.then(async()=>{
     if(!window._fbReady)return;
     try{await DB.syncFromFB()}catch(e){console.warn('syncFromFB failed',e)}
     startRT();
   });
 })();
-
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     if(!document.getElementById('loginPage').classList.contains('hidden')){doLogin();return}
