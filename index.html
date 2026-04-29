@@ -770,7 +770,11 @@ const DB={
   async _fget(k){
     if(!window._fbReady)return null;
     try{
-      const snap=await window._fbGet(window._fbRef(window._fbDB,'tdiu/'+k));
+      // 3 soniya timeout — agar Firebase javob bermasa null qaytaramiz
+      const snap=await Promise.race([
+        window._fbGet(window._fbRef(window._fbDB,'tdiu/'+k)),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
+      ]);
       return snap.exists()?snap.val():null;
     }catch{return null}
   },
@@ -779,20 +783,18 @@ const DB={
   // ── Firebase dan fresh o'qib, callback ga beradi, keyin yozadi ────────────
   // Barcha o'zgartirishlar shu orqali o'tadi — stale overwrite muammosi yo'q
   async _safeMutate(k,mutateFn,fallback){
-    // 1. Firebase dan eng yangi datani o'qi
-    let fresh = null;
-    if(window._fbReady){
-      fresh = await this._fget(k);
+    // RT allaqachon sync bo'lgan bo'lsa — localStorage fresh, to'g'ridan o'qiymiz (tez)
+    // RT sync bo'lmagan bo'lsa — Firebase dan bir marta GET qilamiz (xavfsiz)
+    if(!_rtSynced[k] && window._fbReady){
+      try{
+        const fresh=await this._fget(k);
+        if(fresh!==null) this._lset(k,fresh);
+      }catch(e){console.warn('_safeMutate fget err',k,e)}
     }
-    // 2. Agar Firebase dan kelsa → localStorage ni yangilab ol
-    if(fresh !== null) this._lset(k, fresh);
-    // 3. localStorage yoki fallback
-    const current = this._lget(k) ?? fallback;
-    // 4. Mutatsiya
-    const updated = mutateFn(current);
-    if(updated === false) return; // mutateFn false qaytarsa — bekor
-    // 5. Yoz
-    this.set(k, updated);
+    const current=this._lget(k)??fallback;
+    const updated=mutateFn(current);
+    if(updated===false)return;
+    this.set(k,updated);
     return updated;
   },
   // ── Ko'p test ─────────────────────────────────────────────────────────────
