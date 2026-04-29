@@ -1024,7 +1024,20 @@ function _renderStudentPanel(){
     const r=s?.testResults?.[t.id];
     return r?.completed&&!canRet(CU.id,t.id);
   });
-  goSTab(allDone?'results':'home');
+  // Faqat birinchi ochilishda tab tanlash — foydalanuvchi allaqachon tabda bo'lsa qayta yo'naltirmaymiz
+  const anyTabOpen=document.querySelector('.stab:not(.hidden)');
+  if(!anyTabOpen) goSTab(allDone?'results':'home');
+  else {
+    // Joriy ochiq tabni qayta render qilamiz (fresh data bilan)
+    const activeTab=document.querySelector('.stab:not(.hidden)');
+    if(activeTab){
+      const tabId=activeTab.id.replace('stab-','');
+      if(tabId==='home')rSHome();
+      else if(tabId==='tests')rSTests();
+      else if(tabId==='results')rSResults();
+      else if(tabId==='profile')rSProfile();
+    }
+  }
 }
 
 function goSTab(tab){
