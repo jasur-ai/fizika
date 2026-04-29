@@ -850,18 +850,27 @@ function migrateOldFormat(){
 
 // ─── Real-time listeners ──────────────────────────────────────────────────────
 let _fbListeners=[];
-let _rtSynced={}; // har bir key uchun birinchi RT snapshot kelganini kuzatish
+let _rtSynced={};
+let _rtReady=false; // RT hech bo'lmaganda bir marta to'liq sync bo'ldimi
 
 function startRT(){
-  if(_fbListeners.length>0)return; // allaqachon ishga tushirilgan
+  if(_fbListeners.length>0)return;
   if(!window._fbReady)return;
-  ['stus','tests','cfg','adms'].forEach(k=>{
-    const ref=window._fbRef(window._fbDB,'tdiu/'+k);
-    const unsub=window._fbOnValue(ref,(snap)=>{
-      // snap bo'sh bo'lsa ham localStorage ni yangilaymiz — eskirgan cache qolmasin
-      DB._lset(k, snap.exists()?snap.val():null);
-      _rtSynced[k]=true; // bu key uchun birinchi sync bo'ldi
+  const keys=['stus','tests','cfg','adms'];
+  let syncCount=0;
+  keys.forEach(k=>{
+    const r=window._fbRef(window._fbDB,'tdiu/'+k);
+    const unsub=window._fbOnValue(r,(snap)=>{
+      // Faqat snap.exists() bo'lsa yozamiz — Firebase bo'sh/ulanish uzilganda localStorage ni o'chirmaymiz
+      if(snap.exists()){
+        DB._lset(k, snap.val());
+      }
+      _rtSynced[k]=true;
+      syncCount++;
+      if(syncCount>=keys.length) _rtReady=true;
       _onRTChange(k);
+    },(err)=>{
+      console.warn('RT listener error',k,err);
     });
     _fbListeners.push(unsub);
   });
@@ -869,7 +878,8 @@ function startRT(){
 function stopRT(){
   _fbListeners.forEach(fn=>{try{fn()}catch{}});
   _fbListeners=[];
-  _rtSynced={}; // reset sync tracking
+  _rtSynced={};
+  _rtReady=false;
 }
 
 // RT o'zgarganda kim qayta chiziladi
@@ -882,20 +892,21 @@ function _onRTChange(key){
       if(at.id==='tab-stats')rStats();
       else if(at.id==='tab-students')rStudents();
       else if(at.id==='tab-questions')rQPrev();
+      else if(at.id==='tab-settings')rSettings();
+      else if(at.id==='tab-admins')rAdmins();
     }
   }
   // ── Student panel ──
-  // studentPanel hidden bo'lsa ham CU bor bo'lsa, test yoki result tabiga qaytganda yangi ma'lumot kerak
   const sp=document.getElementById('studentPanel');
   if(sp&&!sp.classList.contains('hidden')&&CU){
-    // Barcha stab tablarni tekshiramiz — hidden bo'lmagan bittasi faol
-    const allTabs=['stab-home','stab-tests','stab-results'];
+    const allTabs=['stab-home','stab-tests','stab-results','stab-profile'];
     for(const tabId of allTabs){
       const el=document.getElementById(tabId);
       if(el&&!el.classList.contains('hidden')){
-        if(tabId==='stab-home')   rSHome();
-        else if(tabId==='stab-tests')  rSTests();
-        else if(tabId==='stab-results')rSResults();
+        if(tabId==='stab-home')    rSHome();
+        else if(tabId==='stab-tests')   rSTests();
+        else if(tabId==='stab-results') rSResults();
+        else if(tabId==='stab-profile') rSProfile();
         break;
       }
     }
@@ -1922,11 +1933,11 @@ function doLogout(){
 
 // ─── APP INIT ─────────────────────────────────────────────────────────────────
 (async function initApp(){
-  // LoginPage ni DARHOL ko'rsatamiz — Firebase kutish tufayli bo'sh sahifa ko'rinmasin
+  // LoginPage ni DARHOL ko'rsatamiz
   migrateOldFormat();
   document.getElementById('loginPage').classList.remove('hidden');
 
-  // Firebase background da yuklanadi — tayyor bo'lgach sync va RT ishga tushadi
+  // Firebase background da yuklanadi
   const waitFB=new Promise(res=>{
     if(window._fbReady){res();return}
     const chk=setInterval(()=>{if(window._fbReady){clearInterval(chk);res()}},30);
@@ -1936,7 +1947,7 @@ function doLogout(){
   waitFB.then(async()=>{
     if(!window._fbReady)return;
     try{await DB.syncFromFB()}catch(e){console.warn('syncFromFB failed',e)}
-    startRT();
+    startRT(); // login sahifasida ham RT ishga tushadi — admin/student kirganda allaqachon tayyor
   });
 })();
 
