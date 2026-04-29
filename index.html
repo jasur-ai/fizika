@@ -1922,20 +1922,22 @@ function doLogout(){
 
 // ─── APP INIT ─────────────────────────────────────────────────────────────────
 (async function initApp(){
-  // <script type="module"> har doim defer → initApp ishlayotganda _fbReady FALSE bo'lishi mumkin.
-  // Shuning uchun Firebase tayyor bo'lguncha kutiladiMaks 4s.
-  if(!window._fbReady){
-    await new Promise(res=>{
-      const chk=setInterval(()=>{if(window._fbReady){clearInterval(chk);res()}},30);
-      setTimeout(()=>{clearInterval(chk);res()},4000); // max 4s kutish
-    });
-  }
-  if(window._fbReady){
-    try{await DB.syncFromFB()}catch(e){console.warn('syncFromFB failed',e)}
-  }
-  migrateOldFormat(); // Eski qs → tests formatiga o'tkazish
-  startRT();          // Firebase tayyor bo'lsa RT ishga tushadi; login sahifasidayoq
+  // LoginPage ni DARHOL ko'rsatamiz — Firebase kutish tufayli bo'sh sahifa ko'rinmasin
+  migrateOldFormat();
   document.getElementById('loginPage').classList.remove('hidden');
+
+  // Firebase background da yuklanadi — tayyor bo'lgach sync va RT ishga tushadi
+  const waitFB=new Promise(res=>{
+    if(window._fbReady){res();return}
+    const chk=setInterval(()=>{if(window._fbReady){clearInterval(chk);res()}},30);
+    setTimeout(()=>{clearInterval(chk);res()},4000);
+  });
+
+  waitFB.then(async()=>{
+    if(!window._fbReady)return;
+    try{await DB.syncFromFB()}catch(e){console.warn('syncFromFB failed',e)}
+    startRT();
+  });
 })();
 
 document.addEventListener('keydown',e=>{
