@@ -12,12 +12,13 @@ import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/fir
 
 const firebaseConfig = {
   apiKey: "AIzaSyDKmtTvyJ3OYzOTNqdrJ44UElSTUSLGS7Q",
-  authDomain: "tdiu-test.firebaseapp.com",
-  databaseURL: "https://tdiu-test-default-rtdb.firebaseio.com",
-  projectId: "tdiu-test",
-  storageBucket: "tdiu-test.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000"
+  authDomain: "fizika-50ce6.firebaseapp.com",
+  databaseURL: "https://fizika-50ce6-default-rtdb.firebaseio.com",
+  projectId: "fizika-50ce6",
+  storageBucket: "fizika-50ce6.firebasestorage.app",
+  messagingSenderId: "112022177883",
+  appId: "1:112022177883:web:8cbaad7884a3f5f02dd77e",
+  measurementId: "G-BEMHSZ5332"
 };
 window._fbApp = initializeApp(firebaseConfig);
 window._fbDB = getDatabase(window._fbApp);
@@ -764,8 +765,15 @@ const DB={
   _lget(k){try{const v=localStorage.getItem(this._k(k));return v===null?null:JSON.parse(v)}catch{return null}},
   _lset(k,v){try{if(v===null||v===undefined)localStorage.removeItem(this._k(k));else localStorage.setItem(this._k(k),JSON.stringify(v))}catch{}},
   async _fset(k,v){
-    if(!window._fbReady)return;
-    try{await window._fbSet(window._fbRef(window._fbDB,'tdiu/'+k),v)}catch(e){console.warn('FB write err',k,e)}
+    if(!window._fbReady){console.warn('_fset: Firebase tayyor emas',k);return;}
+    try{
+      // Firebase undefined, NaN, Infinity qiymatlarni qabul qilmaydi — tozalaymiz
+      const clean=JSON.parse(JSON.stringify(v));
+      await window._fbSet(window._fbRef(window._fbDB,'tdiu/'+k),clean);
+      console.log('✅ Firebase yozildi:',k);
+    }catch(e){
+      console.error('❌ Firebase yozish xatosi:',k,e?.message||e);
+    }
   },
   async _fget(k){
     if(!window._fbReady)return null;
